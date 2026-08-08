@@ -1,0 +1,53 @@
+# vpc-proof-agent — example configuration
+#
+# Copy this file to vpc-proof.yaml (or point the --config flag at it) and
+# adjust the values. Everything shown here matches the built-in defaults.
+# Unknown keys are rejected.
+#
+# Precedence (highest first): command-line flags > VPC_PROOF_* environment
+# variables > this file > defaults.
+
+server:
+  # Interface to bind ("0.0.0.0" for all interfaces).
+  addr: 0.0.0.0
+  # TCP port for the public REST API.
+  port: 8080
+  # Timeouts expressed as Go duration strings.
+  read_timeout: 10s
+  write_timeout: 10s
+  idle_timeout: 60s
+
+auth:
+  # Set to true and provide a token to protect the API.
+  enabled: false
+  token: "" # e.g. "a-long-random-secret"
+  # Endpoints that bypass authentication.
+  public_paths:
+    - /healthz
+    - /readyz
+    - /metrics
+
+probes:
+  # Expected network layout the probes validate against.
+  vpc_cidr: 10.0.0.0/16
+  subnet_cidr: 10.0.1.0/24
+  # External services used to discover the public IP.
+  echo_urls:
+    - https://checkip.amazonaws.com
+  timeout: 5s
+  max_retries: 2
+
+cache:
+  # How long expensive probe results are cached.
+  probe_ttl: 5m
+
+ratelimit:
+  # Per-client steady-state and burst request budgets.
+  requests_per_minute: 100
+  burst: 20
+
+log:
+  # One of debug, info, warn, error.
+  level: info
+  # One of json, console.
+  format: json

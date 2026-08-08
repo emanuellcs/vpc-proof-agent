@@ -11,6 +11,18 @@ MOCKGEN    := $(GOBIN)/mockgen
 GO       ?= go
 GOLANGCI ?= golangci-lint
 
+# --- Build metadata (injected into internal/buildinfo via -ldflags) -----------
+
+VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT     ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+BUILD_DATE ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+BUILDINFO_PKG := github.com/emanuellcs/vpc-proof-agent/internal/buildinfo
+LDFLAGS := -s -w \
+	-X $(BUILDINFO_PKG).Version=$(VERSION) \
+	-X $(BUILDINFO_PKG).Commit=$(COMMIT) \
+	-X $(BUILDINFO_PKG).BuildDate=$(BUILD_DATE)
+
 # --- Default target ---------------------------------------------------------
 
 .PHONY: help
@@ -20,17 +32,17 @@ help: ## Show available targets
 # --- Build & run ------------------------------------------------------------
 
 .PHONY: build
-build: ## Build the binary into bin/vpc-proof
+build: ## Build the binary into bin/vpc-proof (with version ldflags)
 	@mkdir -p bin
-	$(GO) build -o $(BINARY) ./cmd/vpc-proof
+	$(GO) build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/vpc-proof
 
 .PHONY: run
 run: ## Run the scaffold binary
 	$(GO) run ./cmd/vpc-proof
 
 .PHONY: install
-install: ## Install the binary to GOBIN
-	$(GO) install ./cmd/vpc-proof
+install: ## Install the binary to GOBIN (with version ldflags)
+	$(GO) install -ldflags "$(LDFLAGS)" ./cmd/vpc-proof
 
 # --- Test & static analysis -------------------------------------------------
 

@@ -1,15 +1,18 @@
 // Package main is the entry point for the vpc-proof binary.
 //
-// Commit 1 scaffolds the executable only; the Cobra command tree that
-// will expose the CLI surface is introduced in a subsequent commit.
+// It delegates entirely to the cli package, which owns the Cobra command
+// tree, configuration bootstrap, and structured logging.
 package main
 
-import "fmt"
+import (
+	"os"
 
-// version identifies the build of the vpc-proof binary.
-const version = "0.1.0"
+	"github.com/emanuellcs/vpc-proof-agent/internal/cli"
+)
 
-// main prints the current scaffold version and exits successfully.
+// main runs the CLI and maps any execution error to a non-zero exit code.
 func main() {
-	fmt.Printf("vpc-proof %s (repository scaffold)\n", version)
+	if err := cli.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

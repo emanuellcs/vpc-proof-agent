@@ -54,7 +54,9 @@ Read more in [ARCHITECTURE.md](./ARCHITECTURE.md). A Portuguese version of this 
 | Observability | Structured logging (JSON/Text), request IDs, Prometheus-compatible metrics |
 | Operations | systemd service definition, graceful shutdown, config via flags/env/files |
 
-> Status: the repository is currently at **Commit 1** (foundation/scaffold). Business logic is intentionally not implemented yet.
+> Status: the repository is currently at **Commit 2**. The configuration
+> system, structured logging, and the full CLI skeleton are implemented; the
+> probes, diagnostics, and REST API are intentionally not implemented yet.
 
 ## Target AWS Environment
 
@@ -169,6 +171,47 @@ make run            # runs the scaffold binary
 | `make localstack-setup` | Provision the lab in LocalStack |
 | `make localstack-teardown` | Tear down the lab |
 | `make clean` | Remove build artifacts |
+
+## Configuration
+
+The agent is configured through up to four sources, applied in precedence
+order (highest first):
+
+1. **Command-line flags** — `--config`, `--log-level`, `--log-format`.
+2. **Environment variables** — prefixed with `VPC_PROOF_` (see
+   [.env.example](./.env.example)).
+3. **A YAML config file** — passed via `--config`, the `VPC_PROOF_CONFIG`
+   environment variable, or discovered at `./vpc-proof.yaml`,
+   `$XDG_CONFIG_HOME/vpc-proof/config.yaml`, and
+   `/etc/vpc-proof/config.yaml`. See [config.example.yaml](./config.example.yaml).
+4. **Built-in defaults**.
+
+Validate a configuration without running anything:
+
+```bash
+vpc-proof validate-config
+vpc-proof validate-config --config config.example.yaml
+```
+
+`validate-config` prints a success message or a detailed list of errors, each
+prefixed with the offending field (for example `server.port: must be between
+1 and 65535, got 70000`).
+
+## CLI Commands
+
+| Command | Description |
+| --- | --- |
+| `vpc-proof version` | Print version, commit, build date, Go version, and platform |
+| `vpc-proof status` | Quick summary of the instance (stub) |
+| `vpc-proof check` | Run the full probe suite (stub) |
+| `vpc-proof diagnose` | Run probes and output troubleshooting hints (stub) |
+| `vpc-proof report` | Generate an evidence report; `--format json|markdown|text`, `--output <path|->` (stub) |
+| `vpc-proof serve` | Start the REST API; `--addr`, `--port` (stub) |
+| `vpc-proof validate-config` | Load and validate the configuration |
+
+The root command loads and validates the configuration and initializes
+structured logging (JSON or console) before any subcommand runs; failures
+abort with a non-zero exit code.
 
 ## Security
 
