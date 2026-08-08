@@ -72,5 +72,29 @@ func defaultRules() []Rule {
 				"Ensure IMDSv2 is enabled on the instance and reachable from within the instance.",
 			},
 		},
+		{
+			ID:       "clock-skew-critical",
+			Requires: map[string]probe.Status{probe.ClockSkewProbeID: probe.StatusFail},
+			Severity: SeverityCritical,
+			Hints: []string{
+				"Clock skew detected. Verify NTP configuration and ensure the instance is synchronized with Amazon Time Sync Service.",
+			},
+		},
+		{
+			ID:       "clock-skew-warning",
+			Requires: map[string]probe.Status{probe.ClockSkewProbeID: probe.StatusWarn},
+			Severity: SeverityWarning,
+			Hints: []string{
+				"Clock skew detected. Verify NTP configuration and ensure the instance is synchronized with Amazon Time Sync Service.",
+			},
+		},
+		{
+			ID:       "system-resources",
+			Requires: map[string]probe.Status{probe.SystemResourcesProbeID: probe.StatusWarn},
+			Severity: SeverityWarning,
+			Hints: []string{
+				"Check available memory and system load on the instance. Free up resources or resize the instance if needed.",
+			},
+		},
 	}
 }

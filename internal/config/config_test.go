@@ -64,6 +64,20 @@ func TestDefaults(t *testing.T) {
 		t.Errorf("RateLimit.Burst = %d, want 20", c.RateLimit.Burst)
 	}
 
+	if c.History.MaxEntries != 50 {
+		t.Errorf("History.MaxEntries = %d, want 50", c.History.MaxEntries)
+	}
+	if c.History.DiskPath != "" {
+		t.Errorf("History.DiskPath = %q, want empty (persistence disabled)", c.History.DiskPath)
+	}
+	if got := c.History.FlushInterval.Value(); got != 30*time.Second {
+		t.Errorf("History.FlushInterval = %s, want 30s", got)
+	}
+
+	if c.Server.TLSCertFile != "" || c.Server.TLSKeyFile != "" {
+		t.Errorf("TLS should be disabled by default, got cert=%q key=%q", c.Server.TLSCertFile, c.Server.TLSKeyFile)
+	}
+
 	if c.Log.Level != "info" {
 		t.Errorf("Log.Level = %q, want %q", c.Log.Level, "info")
 	}

@@ -13,7 +13,7 @@ import (
 
 func TestStatusCommand(t *testing.T) {
 	deps, _ := defaultDeps(t)
-	stdout, _, code := runCLIWith(deps, "status")
+	stdout, _, code := runCLIWith(&deps, "status")
 
 	if code != exitCodeOK {
 		t.Fatalf("status exit code = %d, want 0", code)
@@ -40,7 +40,7 @@ func TestStatusMetadataUnavailable(t *testing.T) {
 		}},
 	}
 
-	stdout, _, code := runCLIWith(deps, "status")
+	stdout, _, code := runCLIWith(&deps, "status")
 	if code != exitCodeOK {
 		t.Fatalf("status exit code = %d, want 0", code)
 	}
@@ -64,7 +64,7 @@ func TestStatusPublicIPNone(t *testing.T) {
 		}},
 	}
 
-	stdout, _, code := runCLIWith(deps, "status")
+	stdout, _, code := runCLIWith(&deps, "status")
 	if code != exitCodeOK {
 		t.Fatalf("status exit code = %d, want 0", code)
 	}
@@ -77,7 +77,7 @@ func TestCheckExitCodePass(t *testing.T) {
 	deps, server := defaultDeps(t)
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", server.URL)
 
-	stdout, _, code := runCLIWith(deps, "check")
+	stdout, _, code := runCLIWith(&deps, "check")
 	if code != exitCodeOK {
 		t.Fatalf("check exit code = %d, want 0 (all pass)", code)
 	}
@@ -94,7 +94,7 @@ func TestCheckExitCodeFail(t *testing.T) {
 	meta.privateIP = "192.168.1.5"
 	deps.metadataClient = meta
 
-	_, stderr, code := runCLIWith(deps, "check")
+	_, stderr, code := runCLIWith(&deps, "check")
 	if code != exitCodeFailure {
 		t.Fatalf("check exit code = %d, want %d (failures)", code, exitCodeFailure)
 	}
@@ -111,7 +111,7 @@ func TestCheckExitCodeWarn(t *testing.T) {
 	meta.publicIP = ""
 	deps.metadataClient = meta
 
-	_, stderr, code := runCLIWith(deps, "check")
+	_, stderr, code := runCLIWith(&deps, "check")
 	if code != exitCodeWarn {
 		t.Fatalf("check exit code = %d, want %d (warnings)", code, exitCodeWarn)
 	}
@@ -127,7 +127,7 @@ func TestDiagnosePrintsHints(t *testing.T) {
 	meta.privateIP = "192.168.1.5"
 	deps.metadataClient = meta
 
-	stdout, _, code := runCLIWith(deps, "diagnose")
+	stdout, _, code := runCLIWith(&deps, "diagnose")
 	if code != exitCodeOK {
 		t.Fatalf("diagnose exit code = %d, want 0", code)
 	}
@@ -143,7 +143,7 @@ func TestDiagnoseNoIssues(t *testing.T) {
 	deps, server := defaultDeps(t)
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", server.URL)
 
-	stdout, _, code := runCLIWith(deps, "diagnose")
+	stdout, _, code := runCLIWith(&deps, "diagnose")
 	if code != exitCodeOK {
 		t.Fatalf("diagnose exit code = %d, want 0", code)
 	}
@@ -156,7 +156,7 @@ func TestReportToStdout(t *testing.T) {
 	deps, server := defaultDeps(t)
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", server.URL)
 
-	stdout, _, code := runCLIWith(deps, "report", "--format", "json", "--output", "-")
+	stdout, _, code := runCLIWith(&deps, "report", "--format", "json", "--output", "-")
 	if code != exitCodeOK {
 		t.Fatalf("report exit code = %d, want 0", code)
 	}
@@ -175,7 +175,7 @@ func TestReportToFile(t *testing.T) {
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", server.URL)
 
 	path := filepath.Join(t.TempDir(), "evidence.md")
-	stdout, _, code := runCLIWith(deps, "report", "--format", "markdown", "--output", path)
+	stdout, _, code := runCLIWith(&deps, "report", "--format", "markdown", "--output", path)
 	if code != exitCodeOK {
 		t.Fatalf("report exit code = %d, want 0", code)
 	}

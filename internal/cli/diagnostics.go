@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/spf13/cobra"
 
@@ -82,7 +83,7 @@ warnings are raised.`,
 			}
 
 			report := app.RunProbes(cmd.Context())
-			printProbeSummary(cmd, report)
+			printProbeSummary(cmd.OutOrStdout(), report)
 
 			switch report.Status {
 			case probe.StatusFail:
@@ -113,7 +114,7 @@ troubleshooting hints.`,
 			}
 
 			report := app.RunProbes(cmd.Context())
-			printProbeSummary(cmd, report)
+			printProbeSummary(cmd.OutOrStdout(), report)
 
 			hints := app.Diagnose(report)
 			if len(hints) == 0 {
@@ -132,11 +133,11 @@ troubleshooting hints.`,
 
 // printProbeSummary prints one line per probe result followed by a counts
 // summary.
-func printProbeSummary(cmd *cobra.Command, report probe.Report) {
+func printProbeSummary(w io.Writer, report probe.Report) {
 	for _, result := range report.Results {
-		cmd.Printf("  %-22s %s\n", result.ID, result.Status)
+		fmt.Fprintf(w, "  %-22s %s\n", result.ID, result.Status)
 	}
-	cmd.Printf("Summary: %d probes: %d pass, %d fail, %d warn, %d skip (overall %s)\n",
+	fmt.Fprintf(w, "Summary: %d probes: %d pass, %d fail, %d warn, %d skip (overall %s)\n",
 		len(report.Results),
 		countStatus(report, probe.StatusPass),
 		countStatus(report, probe.StatusFail),

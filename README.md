@@ -54,10 +54,11 @@ Read more in [ARCHITECTURE.md](./ARCHITECTURE.md). A Portuguese version of this 
 | Observability | Structured logging (JSON/Text), request IDs, Prometheus-compatible metrics |
 | Operations | systemd service definition, graceful shutdown, config via flags/env/files |
 
-> Status: the repository is currently at **Commit 5**. The configuration
-> system, structured logging, the full CLI (status/check/diagnose/report), the
-> probe engine, the diagnostic rule matrix, the report engine, and the public
-> REST API are implemented.
+> Status: the repository is currently at **Commit 6**. The configuration
+> system, structured logging, the full CLI, the probe engine (including system
+> resources and clock-skew probes), the diagnostic rule matrix, the report
+> engine with integrity hashing, history tracking, optional TLS, and the public
+> REST API are all implemented.
 
 ## Target AWS Environment
 
@@ -209,8 +210,11 @@ prefixed with the offending field (for example `server.port: must be between
 | `vpc-proof status` | Quick summary of the instance (metadata + default route) |
 | `vpc-proof check` | Run the full probe suite; CI/CD gateway exit code |
 | `vpc-proof diagnose` | Run probes and output troubleshooting hints |
-| `vpc-proof report` | Generate an evidence report; `--format json|markdown|text`, `--output <path|->` |
-| `vpc-proof serve` | Start the REST API; `--addr`, `--port` (stub) |
+| `vpc-proof report` | Generate an evidence report; `--format json\|markdown\|text`, `--output <path\|->` |
+| `vpc-proof watch` | Continuously run the probe suite; `--interval`, `--no-clear` |
+| `vpc-proof echo-client` | Query the API echo endpoint; `--url` |
+| `vpc-proof completions` | Generate a shell completion script; `--shell bash\|zsh\|fish\|powershell` |
+| `vpc-proof serve` | Start the REST API; `--addr`, `--port` |
 | `vpc-proof validate-config` | Load and validate the configuration |
 
 The root command loads and validates the configuration, initializes structured
@@ -274,12 +278,28 @@ authentication is enabled, and the configured rate limits.
 | `GET /api/v1/probe` | Full probe report (cached) |
 | `GET /api/v1/report` | Evidence report; `?format=json\|markdown\|text` (default json) |
 | `GET /api/v1/echo` | Proves external reachability: reflects the requester IP, User-Agent, and request time |
+| `GET /api/v1/history` | Past probe run summaries (capped, optionally persisted to disk) |
+| `GET /api/v1/config` | Loaded configuration with `auth.token` redacted as `[REDACTED]` |
+| `GET /api/v1/openapi.json` | The OpenAPI 3.0 specification of the API |
 | `GET /metrics` | Prometheus-compatible text metrics |
 
 Heavy probe endpoints are cached for `cache.probe_ttl`; send
 `X-Force-Refresh: true` (on an authenticated request) to bypass the cache.
 Every response carries an `X-Request-ID`, and errors are returned as JSON with
 the request ID and timestamp.
+
+### Optional TLS
+
+Set `server.tls_cert_file` and `server.tls_key_file` (both must be provided)
+to serve the API over HTTPS; `vpc-proof serve` then uses `ListenAndServeTLS`.
+
+### Report integrity
+
+Every evidence report carries an `integrity_hash`: a SHA-256 digest of the
+canonical JSON representation of the report with the hash field cleared
+(encoding/json serializes map keys in sorted order, so the digest is
+reproducible). Recompute it over the report JSON minus `integrity_hash` to
+verify the report has not been tampered with.
 
 ### Authentication & rate limiting
 

@@ -108,6 +108,24 @@ func TestAnalyzeRuleMatrix(t *testing.T) {
 			want:     "IMDSv2",
 			ruleID:   "imds-configuration",
 		},
+		{
+			name:     "clock skew critical",
+			statuses: map[string]probe.Status{probe.ClockSkewProbeID: probe.StatusFail},
+			want:     "Amazon Time Sync Service",
+			ruleID:   "clock-skew-critical",
+		},
+		{
+			name:     "clock skew warning",
+			statuses: map[string]probe.Status{probe.ClockSkewProbeID: probe.StatusWarn},
+			want:     "Amazon Time Sync Service",
+			ruleID:   "clock-skew-warning",
+		},
+		{
+			name:     "system resources warning",
+			statuses: map[string]probe.Status{probe.SystemResourcesProbeID: probe.StatusWarn},
+			want:     "available memory and system load",
+			ruleID:   "system-resources",
+		},
 	}
 
 	for _, tt := range tests {

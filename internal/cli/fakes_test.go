@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"os"
 	"testing"
 
 	"github.com/emanuellcs/vpc-proof-agent/pkg/netutil"
@@ -113,6 +114,18 @@ func defaultDeps(t *testing.T) (appDeps, *httptest.Server) {
 			{Name: "eth0", Flags: net.FlagUp, Addrs: []netip.Addr{netip.MustParseAddr("10.0.1.42")}},
 		}},
 		echoHTTPClient: server.Client(),
+		fileReader: func(path string) ([]byte, error) {
+			switch path {
+			case "/proc/uptime":
+				return []byte("12345.67 43210.98\n"), nil
+			case "/proc/loadavg":
+				return []byte("0.50 0.30 0.20 1/234 567\n"), nil
+			case "/proc/meminfo":
+				return []byte("MemTotal:       1000000 kB\nMemFree:         950000 kB\nMemAvailable:    950000 kB\n"), nil
+			default:
+				return nil, os.ErrNotExist
+			}
+		},
 	}
 	return deps, server
 }

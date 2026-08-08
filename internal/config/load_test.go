@@ -109,6 +109,9 @@ func TestLoadEnvOverrides(t *testing.T) {
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", "https://api.ipify.org, https://checkip.amazonaws.com")
 	t.Setenv("VPC_PROOF_SERVER_READ_TIMEOUT", "2s")
 	t.Setenv("VPC_PROOF_SERVER_SHUTDOWN_TIMEOUT", "20s")
+	t.Setenv("VPC_PROOF_HISTORY_MAX_ENTRIES", "10")
+	t.Setenv("VPC_PROOF_HISTORY_DISK_PATH", "/tmp/history.json")
+	t.Setenv("VPC_PROOF_HISTORY_FLUSH_INTERVAL", "15s")
 
 	cfg, err := Load(LoadOptions{})
 	if err != nil {
@@ -134,6 +137,15 @@ func TestLoadEnvOverrides(t *testing.T) {
 	}
 	if got := cfg.Server.ShutdownTimeout.Value(); got != 20*time.Second {
 		t.Errorf("Server.ShutdownTimeout = %s, want 20s", got)
+	}
+	if cfg.History.MaxEntries != 10 {
+		t.Errorf("History.MaxEntries = %d, want 10", cfg.History.MaxEntries)
+	}
+	if cfg.History.DiskPath != "/tmp/history.json" {
+		t.Errorf("History.DiskPath = %q", cfg.History.DiskPath)
+	}
+	if got := cfg.History.FlushInterval.Value(); got != 15*time.Second {
+		t.Errorf("History.FlushInterval = %s, want 15s", got)
 	}
 }
 

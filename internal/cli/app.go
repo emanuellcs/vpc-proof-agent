@@ -4,9 +4,12 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/emanuellcs/vpc-proof-agent/internal/config"
 	"github.com/emanuellcs/vpc-proof-agent/internal/diagnostic"
+	"github.com/emanuellcs/vpc-proof-agent/internal/history"
 	"github.com/emanuellcs/vpc-proof-agent/internal/observability"
 	"github.com/emanuellcs/vpc-proof-agent/internal/probe"
 	"github.com/emanuellcs/vpc-proof-agent/pkg/metadata"
@@ -21,6 +24,7 @@ type appDeps struct {
 	routeReader       netutil.RouteTableReader
 	interfaceProvider netutil.InterfaceProvider
 	echoHTTPClient    *http.Client
+	fileReader        func(string) ([]byte, error)
 }
 
 // App is the dependency container shared by the CLI commands. It is built
@@ -34,12 +38,13 @@ type App struct {
 	interfaceProvider netutil.InterfaceProvider
 	runner            *probe.Runner
 	diagnostics       *diagnostic.Engine
+	history           *history.Store
 }
 
 // buildApp assembles the probes from the configuration and wraps them in a
 // Runner. No network I/O happens here, so a metadata-unreachable environment
 // (such as LocalStack) still bootstraps successfully.
-func buildApp(cfg *config.Config, logger *observability.Logger, deps appDeps) (*App, error) {
+func buildApp(cfg *config.Config, logger *observability.Logger, deps *appDeps) (*App, error) {
 	meta := deps.metadataClient
 	if meta == nil {
 		meta = metadata.New(metadata.Options{})
@@ -65,6 +70,11 @@ func buildApp(cfg *config.Config, logger *observability.Logger, deps appDeps) (*
 		httpClient = &http.Client{Timeout: cfg.Probes.Timeout.Value()}
 	}
 
+	fileReader := deps.fileReader
+	if fileReader == nil {
+		fileReader = os.ReadFile
+	}
+
 	echoURL := ""
 	if len(cfg.Probes.EchoURLs) > 0 {
 		echoURL = cfg.Probes.EchoURLs[0]
@@ -78,6 +88,8 @@ func buildApp(cfg *config.Config, logger *observability.Logger, deps appDeps) (*
 		probe.NewDNSProbe(resolver, cfg.Probes.DNSHost, logger),
 		probe.NewInternetHTTPSProbe(httpClient, echoURL, cfg.Probes.MaxRetries, cfg.Probes.Timeout.Value(), logger),
 		probe.NewPublicIPConsistencyProbe(meta, httpClient, echoURL, cfg.Probes.Timeout.Value(), logger),
+		probe.NewSystemResourcesProbe(fileReader, logger),
+		probe.NewClockSkewProbe(httpClient, echoURL, time.Now, logger),
 	}
 
 	runner := probe.NewRunner(
@@ -85,6 +97,12 @@ func buildApp(cfg *config.Config, logger *observability.Logger, deps appDeps) (*
 		probe.WithLogger(logger),
 		probe.WithProbeTimeout(cfg.Probes.Timeout.Value()),
 	)
+
+	historyStore := history.New(history.Options{
+		MaxEntries:    cfg.History.MaxEntries,
+		DiskPath:      cfg.History.DiskPath,
+		FlushInterval: cfg.History.FlushInterval.Value(),
+	})
 
 	return &App{
 		config:            cfg,
@@ -94,12 +112,19 @@ func buildApp(cfg *config.Config, logger *observability.Logger, deps appDeps) (*
 		interfaceProvider: ifaceProvider,
 		runner:            runner,
 		diagnostics:       diagnostic.New(),
+		history:           historyStore,
 	}, nil
 }
 
-// RunProbes executes the full probe suite.
+// RunProbes executes the full probe suite and records a summary in the
+// history store.
 func (a *App) RunProbes(ctx context.Context) probe.Report {
-	return a.runner.Run(ctx)
+	report := a.runner.Run(ctx)
+	if a.history != nil {
+		entry := history.FromReport(report)
+		a.history.Append(&entry)
+	}
+	return report
 }
 
 // Diagnose translates a probe report into troubleshooting hints.

@@ -1,6 +1,10 @@
 package report
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/emanuellcs/vpc-proof-agent/internal/diagnostic"
@@ -27,6 +31,10 @@ type Data struct {
 	Diagnostics []diagnostic.Hint `json:"diagnostics"`
 	// GeneratedAt is when the underlying probe run started.
 	GeneratedAt time.Time `json:"generated_at"`
+	// IntegrityHash is a SHA-256 digest of the canonical JSON representation
+	// of the report with this field cleared, proving the report was not
+	// tampered with after generation.
+	IntegrityHash string `json:"integrity_hash"`
 }
 
 // AgentInfo identifies the version of the tool that generated the report.
@@ -92,14 +100,15 @@ type Summary struct {
 
 // Build assembles a Data from a probe report, diagnostic hints, and
 // agent metadata. Instance and network details are extracted from the
-// individual probe results' technical details.
+// individual probe results' technical details. The integrity hash is computed
+// over the assembled report.
 func Build(pr probe.Report, hints []diagnostic.Hint, agent *AgentInfo) Data {
 	generatedAt := pr.StartedAt
 	if generatedAt.IsZero() {
 		generatedAt = time.Now().UTC()
 	}
 
-	return Data{
+	data := Data{
 		Agent:       *agent,
 		Instance:    extractInstance(pr),
 		Network:     extractNetwork(pr),
@@ -108,6 +117,43 @@ func Build(pr probe.Report, hints []diagnostic.Hint, agent *AgentInfo) Data {
 		Diagnostics: hints,
 		GeneratedAt: generatedAt,
 	}
+	data.SetIntegrityHash()
+	return data
+}
+
+// SetIntegrityHash computes and stores the SHA-256 integrity hash over the
+// canonical JSON representation of the report with the hash field cleared.
+// encoding/json serializes map keys in sorted order, so the representation is
+// deterministic and the hash is reproducible by any reader.
+func (d *Data) SetIntegrityHash() {
+	hash, err := computeIntegrityHash(d)
+	if err == nil {
+		d.IntegrityHash = hash
+	}
+}
+
+// VerifyIntegrityHash reports whether d's stored hash matches a fresh
+// computation over the report.
+func VerifyIntegrityHash(d *Data) bool {
+	expected, err := computeIntegrityHash(d)
+	if err != nil {
+		return false
+	}
+	return d.IntegrityHash == expected
+}
+
+// computeIntegrityHash returns the SHA-256 hex digest of the canonical JSON
+// representation of d with the IntegrityHash field cleared.
+func computeIntegrityHash(d *Data) (string, error) {
+	cleared := *d
+	cleared.IntegrityHash = ""
+
+	raw, err := json.Marshal(cleared)
+	if err != nil {
+		return "", fmt.Errorf("marshal report for hashing: %w", err)
+	}
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 // extractInstance pulls instance metadata out of the probe results.

@@ -103,8 +103,8 @@ func TestStatusEndpoint(t *testing.T) {
 	if summary["status"] != "pass" {
 		t.Errorf("summary status = %v, want pass", summary["status"])
 	}
-	if summary["total"] != float64(7) {
-		t.Errorf("summary total = %v, want 7", summary["total"])
+	if summary["total"] != float64(9) {
+		t.Errorf("summary total = %v, want 9", summary["total"])
 	}
 }
 
@@ -144,7 +144,7 @@ func TestProbeEndpoint(t *testing.T) {
 		t.Errorf("report status = %v, want pass", report["status"])
 	}
 	results, ok := report["results"].([]any)
-	if !ok || len(results) != 7 {
+	if !ok || len(results) != 9 {
 		t.Errorf("report results = %v, want 7 entries", report["results"])
 	}
 }

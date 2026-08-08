@@ -107,5 +107,6 @@
       "message": "Ensure the Subnet has 'Auto-assign public IP' enabled and the instance has a public IP associated."
     }
   ],
-  "generated_at": "2026-08-08T12:00:00Z"
+  "generated_at": "2026-08-08T12:00:00Z",
+  "integrity_hash": "0dd56e5ea56bed649bb3ded9a35c243ed301a65da0171c2ab69c2b2927b66e54"
 }

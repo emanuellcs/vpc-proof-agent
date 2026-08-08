@@ -128,7 +128,7 @@ func TestServeCommandFailsOnOccupiedPort(t *testing.T) {
 
 	deps, _ := defaultDeps(t)
 
-	stdout, stderr, code := runCLIWith(deps, "serve", "--addr", "127.0.0.1", "--port", fmt.Sprintf("%d", port))
+	stdout, stderr, code := runCLIWith(&deps, "serve", "--addr", "127.0.0.1", "--port", fmt.Sprintf("%d", port))
 	if code == exitCodeOK {
 		t.Fatalf("expected a non-zero exit code when the port is occupied, got 0")
 	}

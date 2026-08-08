@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/emanuellcs/vpc-proof-agent/internal/api/cache"
+	"github.com/emanuellcs/vpc-proof-agent/internal/config"
 	"github.com/emanuellcs/vpc-proof-agent/internal/diagnostic"
+	"github.com/emanuellcs/vpc-proof-agent/internal/history"
 	"github.com/emanuellcs/vpc-proof-agent/internal/observability"
 	"github.com/emanuellcs/vpc-proof-agent/internal/probe"
 	"github.com/emanuellcs/vpc-proof-agent/internal/report"
@@ -20,28 +22,36 @@ import (
 // a fresh probe execution.
 const forceRefreshHeader = "X-Force-Refresh"
 
+// redactedToken is the placeholder replacing sensitive configuration values.
+const redactedToken = "[REDACTED]"
+
 // knownRoutes maps each registered path to the methods it accepts, used to
 // emit 405 Method Not Allowed from the catch-all handler.
 var knownRoutes = map[string][]string{
-	"/healthz":        {http.MethodGet},
-	"/readyz":         {http.MethodGet},
-	"/metrics":        {http.MethodGet},
-	"/api/v1/info":    {http.MethodGet},
-	"/api/v1/status":  {http.MethodGet},
-	"/api/v1/network": {http.MethodGet},
-	"/api/v1/probe":   {http.MethodGet},
-	"/api/v1/report":  {http.MethodGet},
-	"/api/v1/echo":    {http.MethodGet},
+	"/healthz":             {http.MethodGet},
+	"/readyz":              {http.MethodGet},
+	"/metrics":             {http.MethodGet},
+	"/api/v1/info":         {http.MethodGet},
+	"/api/v1/status":       {http.MethodGet},
+	"/api/v1/network":      {http.MethodGet},
+	"/api/v1/probe":        {http.MethodGet},
+	"/api/v1/report":       {http.MethodGet},
+	"/api/v1/echo":         {http.MethodGet},
+	"/api/v1/history":      {http.MethodGet},
+	"/api/v1/config":       {http.MethodGet},
+	"/api/v1/openapi.json": {http.MethodGet},
 }
 
 // Handlers implements the HTTP endpoints. It is intentionally decoupled from
 // the CLI container: dependencies are injected as plain fields.
 type Handlers struct {
+	config   *config.Config
 	logger   *observability.Logger
 	metadata metadata.Client
 	runner   *probe.Runner
 	engine   *diagnostic.Engine
 	cache    *cache.Cache
+	history  *history.Store
 	metrics  *observability.Metrics
 
 	// refreshMu serializes concurrent cache refreshes to prevent a stampede.
@@ -59,6 +69,9 @@ func (h *Handlers) routes() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/probe", h.probe)
 	mux.HandleFunc("GET /api/v1/report", h.report)
 	mux.HandleFunc("GET /api/v1/echo", h.echo)
+	mux.HandleFunc("GET /api/v1/history", h.historyHandler)
+	mux.HandleFunc("GET /api/v1/config", h.configHandler)
+	mux.HandleFunc("GET /api/v1/openapi.json", h.openAPIHandler)
 	mux.HandleFunc("GET /metrics", h.metricsHandler)
 	mux.HandleFunc("/", h.notFound)
 	return mux
@@ -156,12 +169,47 @@ func (h *Handlers) echo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// metrics exposes the Prometheus-compatible text metrics.
+// metricsHandler exposes the Prometheus-compatible text metrics.
 func (h *Handlers) metricsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	if err := h.metrics.WritePrometheus(w); err != nil {
 		h.logError(r, "write metrics", err)
 	}
+}
+
+// historyHandler returns the past probe run summaries.
+func (h *Handlers) historyHandler(w http.ResponseWriter, _ *http.Request) {
+	if h.history == nil {
+		writeJSON(w, http.StatusOK, []history.Entry{})
+		return
+	}
+	writeJSON(w, http.StatusOK, h.history.List())
+}
+
+// configHandler returns the loaded configuration with sensitive fields
+// redacted.
+func (h *Handlers) configHandler(w http.ResponseWriter, r *http.Request) {
+	if h.config == nil {
+		writeError(w, r, http.StatusInternalServerError, "internal server error")
+		return
+	}
+	writeJSON(w, http.StatusOK, sanitizedConfig(h.config))
+}
+
+// openAPIHandler serves the embedded OpenAPI 3.0 specification.
+func (h *Handlers) openAPIHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(openAPIDocument); err != nil {
+		h.logError(r, "write openapi document", err)
+	}
+}
+
+// sanitizedConfig returns a copy of the configuration with sensitive values
+// replaced by a redaction placeholder.
+func sanitizedConfig(cfg *config.Config) *config.Config {
+	sanitized := *cfg
+	sanitized.Auth.Token = redactedToken
+	return &sanitized
 }
 
 // fetchInstance gathers instance metadata, degrading gracefully when the
@@ -224,6 +272,10 @@ func (h *Handlers) refresh(ctx context.Context, force bool) report.Data {
 		for _, result := range probeReport.Results {
 			h.metrics.SetProbeStatus(result.ID, result.Status.String())
 		}
+	}
+	if h.history != nil {
+		entry := history.FromReport(probeReport)
+		h.history.Append(&entry)
 	}
 
 	h.cache.Put(&data)

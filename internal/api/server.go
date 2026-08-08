@@ -15,6 +15,7 @@ import (
 	"github.com/emanuellcs/vpc-proof-agent/internal/api/cache"
 	"github.com/emanuellcs/vpc-proof-agent/internal/config"
 	"github.com/emanuellcs/vpc-proof-agent/internal/diagnostic"
+	"github.com/emanuellcs/vpc-proof-agent/internal/history"
 	"github.com/emanuellcs/vpc-proof-agent/internal/observability"
 	"github.com/emanuellcs/vpc-proof-agent/internal/probe"
 	"github.com/emanuellcs/vpc-proof-agent/pkg/metadata"
@@ -37,6 +38,8 @@ type Options struct {
 	Engine *diagnostic.Engine
 	// Cache stores the most recent probe report.
 	Cache *cache.Cache
+	// History tracks past probe run summaries (may be nil).
+	History *history.Store
 	// Metrics records HTTP and probe metrics (defaults to a fresh registry).
 	Metrics *observability.Metrics
 }
@@ -50,6 +53,9 @@ type Server struct {
 	rateLimiter *rateLimiter
 	// cleanupCancel stops the rate-limiter cleanup goroutine on shutdown.
 	cleanupCancel context.CancelFunc
+	// tlsCertFile and tlsKeyFile, when both set, enable HTTPS serving.
+	tlsCertFile string
+	tlsKeyFile  string
 }
 
 // New builds a Server from the given options, wiring the routing table and
@@ -73,11 +79,13 @@ func New(opts Options) (*Server, error) {
 	}
 
 	handlers := &Handlers{
+		config:   opts.Config,
 		logger:   opts.Logger,
 		metadata: opts.Metadata,
 		runner:   opts.Runner,
 		engine:   opts.Engine,
 		cache:    opts.Cache,
+		history:  opts.History,
 		metrics:  opts.Metrics,
 	}
 
@@ -111,6 +119,8 @@ func New(opts Options) (*Server, error) {
 		logger:        opts.Logger,
 		rateLimiter:   limiter,
 		cleanupCancel: cleanupCancel,
+		tlsCertFile:   opts.Config.Server.TLSCertFile,
+		tlsKeyFile:    opts.Config.Server.TLSKeyFile,
 	}, nil
 }
 
@@ -120,9 +130,19 @@ func (s *Server) Handler() http.Handler {
 	return s.handler
 }
 
-// ListenAndServe starts serving on the configured address.
+// ListenAndServe starts serving on the configured address, using HTTPS when
+// both a TLS certificate and key are configured.
 func (s *Server) ListenAndServe() error {
+	if s.tlsCertFile != "" && s.tlsKeyFile != "" {
+		return s.httpServer.ListenAndServeTLS(s.tlsCertFile, s.tlsKeyFile)
+	}
 	return s.httpServer.ListenAndServe()
+}
+
+// TLSCertFile returns the configured TLS certificate path, or an empty string
+// when TLS is disabled.
+func (s *Server) TLSCertFile() string {
+	return s.tlsCertFile
 }
 
 // Shutdown gracefully stops the server, waiting for in-flight requests up to

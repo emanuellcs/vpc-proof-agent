@@ -20,7 +20,7 @@ var updateGolden = flag.Bool("update", false, "update golden files")
 
 func testData() *Data {
 	startedAt := time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)
-	return &Data{
+	data := &Data{
 		Agent: AgentInfo{
 			Name:      "vpc-proof",
 			Version:   "1.2.3",
@@ -67,6 +67,62 @@ func testData() *Data {
 			{RuleID: "public-ip-assignment", Severity: diagnostic.SeverityWarning, Message: "Ensure the Subnet has 'Auto-assign public IP' enabled and the instance has a public IP associated."},
 		},
 		GeneratedAt: startedAt,
+	}
+	data.SetIntegrityHash()
+	return data
+}
+
+func TestIntegrityHash(t *testing.T) {
+	pr := probe.Report{
+		StartedAt: time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC),
+		Status:    probe.StatusPass,
+		Results: []probe.Result{
+			{ID: probe.MetadataProbeID, Status: probe.StatusPass, Details: map[string]string{"instance_id": "i-1"}},
+		},
+	}
+	agent := AgentInfo{Version: "1.0.0"}
+
+	data := Build(pr, nil, &agent)
+	if data.IntegrityHash == "" {
+		t.Fatal("Build should populate the integrity hash")
+	}
+	if !VerifyIntegrityHash(&data) {
+		t.Error("stored hash should verify against a fresh computation")
+	}
+
+	// Tampering with any field must change the hash.
+	tampered := data
+	tampered.IntegrityHash = ""
+	tampered.Instance.PrivateIP = "10.0.9.9"
+	if VerifyIntegrityHash(&tampered) {
+		t.Error("tampered report should fail verification")
+	}
+}
+
+func TestIntegrityHashDeterministic(t *testing.T) {
+	startedAt := time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)
+	makeData := func(details map[string]string) Data {
+		pr := probe.Report{
+			StartedAt: startedAt,
+			Status:    probe.StatusPass,
+			Results: []probe.Result{
+				{ID: probe.MetadataProbeID, Status: probe.StatusPass, Details: details},
+			},
+		}
+		agent := AgentInfo{Version: "1.0.0"}
+		return Build(pr, nil, &agent)
+	}
+
+	// Identical content with maps inserted in different orders must hash to
+	// the same value.
+	a := makeData(map[string]string{"b": "1", "a": "2", "c": "3"})
+	b := makeData(map[string]string{"c": "3", "a": "2", "b": "1"})
+
+	if a.IntegrityHash != b.IntegrityHash {
+		t.Errorf("hash is not deterministic across map ordering:\n a=%s\n b=%s", a.IntegrityHash, b.IntegrityHash)
+	}
+	if !VerifyIntegrityHash(&a) || !VerifyIntegrityHash(&b) {
+		t.Error("both variants should verify")
 	}
 }
 

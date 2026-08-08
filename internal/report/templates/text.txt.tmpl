@@ -6,6 +6,7 @@
  Agent               : {{ .Agent.Name }} {{ .Agent.Version }} (commit {{ .Agent.Commit }})
  Go runtime          : {{ .Agent.GoVersion }}
  Platform            : {{ .Agent.Platform }}
+ Integrity Hash      : {{ .IntegrityHash }}
 
 --- Instance ----------------------------------------------------
  Instance ID         : {{ or .Instance.InstanceID "N/A" }}

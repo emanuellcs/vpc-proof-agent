@@ -54,6 +54,7 @@ and the reachability echo endpoint.`,
 				Runner:   app.runner,
 				Engine:   app.diagnostics,
 				Cache:    probeCache,
+				History:  app.history,
 				Metrics:  metrics,
 			})
 			if err != nil {
@@ -61,9 +62,11 @@ and the reachability echo endpoint.`,
 			}
 
 			if app.logger != nil {
+				tlsEnabled := cfg.Server.TLSCertFile != "" && cfg.Server.TLSKeyFile != ""
 				app.logger.Info("starting http server",
 					observability.Component("cli"),
 					observability.Str("addr", fmt.Sprintf("%s:%d", cfg.Server.Addr, cfg.Server.Port)),
+					observability.Bool("tls_enabled", tlsEnabled),
 					observability.Bool("auth_enabled", cfg.Auth.Enabled),
 					observability.Int("rate_limit_per_minute", cfg.RateLimit.RequestsPerMinute),
 					observability.Int("rate_limit_burst", cfg.RateLimit.Burst),
@@ -72,6 +75,10 @@ and the reachability echo endpoint.`,
 
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
+
+			if app.history != nil {
+				app.history.Start(ctx)
+			}
 
 			return runServer(ctx, server, cfg.Server.ShutdownTimeout.Value(), app.logger)
 		},

@@ -19,6 +19,8 @@ const (
 	DNSProbeID                 = "dns"
 	InternetHTTPSProbeID       = "internet_https"
 	PublicIPConsistencyProbeID = "public_ip_consistency"
+	SystemResourcesProbeID     = "system_resources"
+	ClockSkewProbeID           = "clock_skew"
 )
 
 // Probe executes a single diagnostic check.

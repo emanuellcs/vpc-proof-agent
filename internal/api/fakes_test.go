@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"github.com/emanuellcs/vpc-proof-agent/internal/api/cache"
 	"github.com/emanuellcs/vpc-proof-agent/internal/config"
 	"github.com/emanuellcs/vpc-proof-agent/internal/diagnostic"
+	"github.com/emanuellcs/vpc-proof-agent/internal/history"
 	"github.com/emanuellcs/vpc-proof-agent/internal/probe"
 	"github.com/emanuellcs/vpc-proof-agent/pkg/netutil"
 )
@@ -157,6 +159,21 @@ func testMeta() fakeMetadata {
 	}
 }
 
+// healthyProcReader serves benign /proc content so the system resources probe
+// is deterministic in tests.
+func healthyProcReader(path string) ([]byte, error) {
+	switch path {
+	case "/proc/uptime":
+		return []byte("12345.67 43210.98\n"), nil
+	case "/proc/loadavg":
+		return []byte("0.50 0.30 0.20 1/234 567\n"), nil
+	case "/proc/meminfo":
+		return []byte("MemTotal:       1000000 kB\nMemFree:         950000 kB\nMemAvailable:    950000 kB\n"), nil
+	default:
+		return nil, errors.New("no such file")
+	}
+}
+
 // newTestRunner builds a probe runner whose every external interaction is
 // served by fakes and the given echo server.
 func newTestRunner(echoURL string, echoClient *http.Client) *probe.Runner {
@@ -178,6 +195,8 @@ func newTestRunner(echoURL string, echoClient *http.Client) *probe.Runner {
 		probe.NewDNSProbe(fakeResolver{addrs: []netip.Addr{netip.MustParseAddr("203.0.113.10")}}, "amazon.com", nil),
 		probe.NewInternetHTTPSProbe(echoClient, echoURL, 0, 0, nil),
 		probe.NewPublicIPConsistencyProbe(meta, echoClient, echoURL, 0, nil),
+		probe.NewSystemResourcesProbe(healthyProcReader, nil),
+		probe.NewClockSkewProbe(echoClient, echoURL, nil, nil),
 	}
 
 	return probe.NewRunner(probes)
@@ -199,6 +218,7 @@ func newTestServer(t *testing.T, mutate func(*config.Config)) (*Server, *cache.C
 	t.Cleanup(echoServer.Close)
 
 	probeCache := cache.New(cfg.Cache.ProbeTTL.Value())
+	historyStore := history.New(history.Options{MaxEntries: 10})
 	server, err := New(Options{
 		Config:   cfg,
 		Logger:   nil,
@@ -206,6 +226,7 @@ func newTestServer(t *testing.T, mutate func(*config.Config)) (*Server, *cache.C
 		Runner:   newTestRunner(echoServer.URL, echoServer.Client()),
 		Engine:   diagnostic.New(),
 		Cache:    probeCache,
+		History:  historyStore,
 	})
 	if err != nil {
 		t.Fatalf("api.New: %v", err)

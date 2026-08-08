@@ -7,6 +7,7 @@
 | Agent | vpc-proof 1.2.3 (commit abc1234, built 2026-08-08T12:00:00Z) |
 | Go runtime | go1.26.5 |
 | Platform | linux/amd64 |
+| Integrity hash | `0dd56e5ea56bed649bb3ded9a35c243ed301a65da0171c2ab69c2b2927b66e54` |
 
 ## 1. Instance
 

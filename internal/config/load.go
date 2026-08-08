@@ -96,6 +96,8 @@ func applyEnv(cfg *Config) error {
 		{name: envPrefix + "SERVER_WRITE_TIMEOUT", apply: setDuration(&cfg.Server.WriteTimeout)},
 		{name: envPrefix + "SERVER_IDLE_TIMEOUT", apply: setDuration(&cfg.Server.IdleTimeout)},
 		{name: envPrefix + "SERVER_SHUTDOWN_TIMEOUT", apply: setDuration(&cfg.Server.ShutdownTimeout)},
+		{name: envPrefix + "SERVER_TLS_CERT_FILE", apply: setStr(&cfg.Server.TLSCertFile)},
+		{name: envPrefix + "SERVER_TLS_KEY_FILE", apply: setStr(&cfg.Server.TLSKeyFile)},
 		{name: envPrefix + "AUTH_ENABLED", apply: setBool(&cfg.Auth.Enabled)},
 		{name: envPrefix + "AUTH_TOKEN", apply: setStr(&cfg.Auth.Token)},
 		{name: envPrefix + "PROBES_VPC_CIDR", apply: setStr(&cfg.Probes.VpcCIDR)},
@@ -107,6 +109,9 @@ func applyEnv(cfg *Config) error {
 		{name: envPrefix + "CACHE_PROBE_TTL", apply: setDuration(&cfg.Cache.ProbeTTL)},
 		{name: envPrefix + "RATELIMIT_REQUESTS_PER_MINUTE", apply: setInt(&cfg.RateLimit.RequestsPerMinute)},
 		{name: envPrefix + "RATELIMIT_BURST", apply: setInt(&cfg.RateLimit.Burst)},
+		{name: envPrefix + "HISTORY_MAX_ENTRIES", apply: setInt(&cfg.History.MaxEntries)},
+		{name: envPrefix + "HISTORY_DISK_PATH", apply: setStr(&cfg.History.DiskPath)},
+		{name: envPrefix + "HISTORY_FLUSH_INTERVAL", apply: setDuration(&cfg.History.FlushInterval)},
 		{name: envPrefix + "LOG_LEVEL", apply: setStr(&cfg.Log.Level)},
 		{name: envPrefix + "LOG_FORMAT", apply: setStr(&cfg.Log.Format)},
 	}

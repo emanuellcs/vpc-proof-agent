@@ -109,6 +109,8 @@ var (
 	_ Probe = (*DNSProbe)(nil)
 	_ Probe = (*InternetHTTPSProbe)(nil)
 	_ Probe = (*PublicIPConsistencyProbe)(nil)
+	_ Probe = (*SystemResourcesProbe)(nil)
+	_ Probe = (*ClockSkewProbe)(nil)
 )
 
 func TestMetadataProbe(t *testing.T) {

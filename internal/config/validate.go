@@ -12,16 +12,17 @@ import (
 // reported verbatim to the user.
 func (c *Config) Validate() []error {
 	var errs []error
-	errs = append(errs, validateServer(c.Server)...)
+	errs = append(errs, validateServer(&c.Server)...)
 	errs = append(errs, validateAuth(c.Auth)...)
 	errs = append(errs, validateProbes(&c.Probes)...)
 	errs = append(errs, validateCache(c.Cache)...)
 	errs = append(errs, validateRateLimit(c.RateLimit)...)
+	errs = append(errs, validateHistory(c.History)...)
 	errs = append(errs, validateLog(c.Log)...)
 	return errs
 }
 
-func validateServer(s ServerConfig) []error {
+func validateServer(s *ServerConfig) []error {
 	var errs []error
 	if s.Addr == "" {
 		errs = append(errs, fmt.Errorf("server.addr: must not be empty"))
@@ -40,6 +41,9 @@ func validateServer(s ServerConfig) []error {
 	}
 	if s.ShutdownTimeout.NonPositive() {
 		errs = append(errs, fmt.Errorf("server.shutdown_timeout: must be a positive duration, got %s", s.ShutdownTimeout.String()))
+	}
+	if (s.TLSCertFile == "") != (s.TLSKeyFile == "") {
+		errs = append(errs, fmt.Errorf("server.tls_cert_file and server.tls_key_file must be set together"))
 	}
 	return errs
 }
@@ -95,6 +99,17 @@ func validateRateLimit(r RateLimitConfig) []error {
 	}
 	if r.Burst < 1 {
 		errs = append(errs, fmt.Errorf("ratelimit.burst: must be at least 1, got %d", r.Burst))
+	}
+	return errs
+}
+
+func validateHistory(h HistoryConfig) []error {
+	var errs []error
+	if h.MaxEntries < 1 {
+		errs = append(errs, fmt.Errorf("history.max_entries: must be at least 1, got %d", h.MaxEntries))
+	}
+	if h.FlushInterval.NonPositive() {
+		errs = append(errs, fmt.Errorf("history.flush_interval: must be a positive duration, got %s", h.FlushInterval.String()))
 	}
 	return errs
 }

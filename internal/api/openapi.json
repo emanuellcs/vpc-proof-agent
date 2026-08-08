@@ -1,0 +1,424 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "VPC Proof Agent API",
+    "version": "v1",
+    "description": "Diagnostic and evidence-gathering API for validating a manually provisioned AWS networking environment."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local instance"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Liveness check",
+        "operationId": "healthz",
+        "responses": {
+          "200": {
+            "description": "Service is alive",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readiness check",
+        "operationId": "readyz",
+        "responses": {
+          "200": {
+            "description": "Service is ready",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthResponse" }
+              }
+            }
+          },
+          "503": {
+            "description": "Service dependencies are not wired",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus-compatible metrics",
+        "operationId": "metrics",
+        "responses": {
+          "200": {
+            "description": "Text metrics in the Prometheus exposition format",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/info": {
+      "get": {
+        "summary": "Agent build info and instance metadata",
+        "operationId": "info",
+        "responses": {
+          "200": {
+            "description": "Agent and instance information",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InfoResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "summary": "Aggregated probe status and counts",
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "description": "Aggregated summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Summary" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/network": {
+      "get": {
+        "summary": "Network summary",
+        "operationId": "network",
+        "responses": {
+          "200": {
+            "description": "Gateway, interface, primary IP, and DNS addresses",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Network" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/probe": {
+      "get": {
+        "summary": "Full probe report",
+        "operationId": "probe",
+        "parameters": [
+          {
+            "name": "X-Force-Refresh",
+            "in": "header",
+            "required": false,
+            "description": "Bypass the probe cache and force a fresh run when true",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The complete probe report",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProbeReport" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report": {
+      "get": {
+        "summary": "Full evidence report",
+        "operationId": "report",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Output format",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "markdown", "text"],
+              "default": "json"
+            }
+          },
+          {
+            "name": "X-Force-Refresh",
+            "in": "header",
+            "required": false,
+            "description": "Bypass the probe cache and force a fresh run when true",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rendered evidence report",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ReportData" } },
+              "text/markdown": { "schema": { "type": "string" } },
+              "text/plain": { "schema": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/echo": {
+      "get": {
+        "summary": "External reachability echo",
+        "operationId": "echo",
+        "responses": {
+          "200": {
+            "description": "The requester's IP, User-Agent, and request time",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EchoResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history": {
+      "get": {
+        "summary": "Past probe run summaries",
+        "operationId": "history",
+        "responses": {
+          "200": {
+            "description": "Capped list of run summaries, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/HistoryEntry" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config": {
+      "get": {
+        "summary": "Currently loaded configuration with secrets redacted",
+        "operationId": "config",
+        "responses": {
+          "200": {
+            "description": "The sanitized configuration",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConfigResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "summary": "This OpenAPI specification",
+        "operationId": "openapi",
+        "responses": {
+          "200": {
+            "description": "The OpenAPI 3.0 document",
+            "content": {
+              "application/json": { "schema": { "type": "object" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer token authentication; enforced only when auth.enabled is true"
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "ok" }
+        },
+        "required": ["status"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["error", "request_id", "timestamp"]
+      },
+      "EchoResponse": {
+        "type": "object",
+        "properties": {
+          "ip": { "type": "string" },
+          "user_agent": { "type": "string" },
+          "received_at": { "type": "string", "format": "date-time" }
+        },
+        "required": ["ip", "user_agent", "received_at"]
+      },
+      "AgentInfo": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "commit": { "type": "string" },
+          "build_date": { "type": "string" },
+          "go_version": { "type": "string" },
+          "platform": { "type": "string" }
+        }
+      },
+      "Instance": {
+        "type": "object",
+        "properties": {
+          "instance_id": { "type": "string" },
+          "availability_zone": { "type": "string" },
+          "private_ip": { "type": "string" },
+          "public_ip": { "type": "string" },
+          "mac_address": { "type": "string" },
+          "subnet_cidr": { "type": "string" },
+          "vpc_cidr": { "type": "string" }
+        }
+      },
+      "InfoResponse": {
+        "type": "object",
+        "properties": {
+          "agent": { "$ref": "#/components/schemas/AgentInfo" },
+          "instance": { "$ref": "#/components/schemas/Instance" }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["pass", "fail", "warn", "skip"] },
+          "passed": { "type": "integer" },
+          "failed": { "type": "integer" },
+          "warned": { "type": "integer" },
+          "skipped": { "type": "integer" },
+          "total": { "type": "integer" },
+          "duration": { "type": "integer", "description": "nanoseconds" }
+        }
+      },
+      "Network": {
+        "type": "object",
+        "properties": {
+          "default_gateway": { "type": "string" },
+          "default_interface": { "type": "string" },
+          "primary_ip": { "type": "string" },
+          "dns_addresses": { "type": "string" }
+        }
+      },
+      "ProbeResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["pass", "fail", "warn", "skip"] },
+          "duration": { "type": "integer", "description": "nanoseconds" },
+          "message": { "type": "string" },
+          "details": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "hint": { "type": "string" }
+        }
+      },
+      "ProbeReport": {
+        "type": "object",
+        "properties": {
+          "started_at": { "type": "string", "format": "date-time" },
+          "duration": { "type": "integer", "description": "nanoseconds" },
+          "status": { "type": "string", "enum": ["pass", "fail", "warn", "skip"] },
+          "results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ProbeResult" }
+          }
+        }
+      },
+      "Hint": {
+        "type": "object",
+        "properties": {
+          "rule_id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["info", "warning", "critical"] },
+          "message": { "type": "string" }
+        }
+      },
+      "ReportData": {
+        "type": "object",
+        "properties": {
+          "agent": { "$ref": "#/components/schemas/AgentInfo" },
+          "instance": { "$ref": "#/components/schemas/Instance" },
+          "network": { "$ref": "#/components/schemas/Network" },
+          "summary": { "$ref": "#/components/schemas/Summary" },
+          "probes": { "$ref": "#/components/schemas/ProbeReport" },
+          "diagnostics": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Hint" }
+          },
+          "generated_at": { "type": "string", "format": "date-time" },
+          "integrity_hash": { "type": "string", "description": "SHA-256 of the canonical JSON with this field cleared" }
+        }
+      },
+      "HistoryEntry": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["pass", "fail", "warn", "skip"] },
+          "passed": { "type": "integer" },
+          "failed": { "type": "integer" },
+          "warned": { "type": "integer" },
+          "skipped": { "type": "integer" },
+          "duration": { "type": "integer", "description": "nanoseconds" }
+        }
+      },
+      "ConfigResponse": {
+        "type": "object",
+        "description": "The loaded configuration. The auth.token field is always rendered as [REDACTED].",
+        "properties": {
+          "server": { "type": "object" },
+          "auth": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "token": { "type": "string", "example": "[REDACTED]" },
+              "public_paths": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "probes": { "type": "object" },
+          "cache": { "type": "object" },
+          "ratelimit": { "type": "object" },
+          "history": { "type": "object" },
+          "log": { "type": "object" }
+        }
+      }
+    }
+  }
+}

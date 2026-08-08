@@ -18,6 +18,9 @@ server:
   idle_timeout: 60s
   # Graceful shutdown window for in-flight requests.
   shutdown_timeout: 10s
+  # Set both to serve the API over HTTPS.
+  tls_cert_file: "" # e.g. /etc/vpc-proof/cert.pem
+  tls_key_file: ""  # e.g. /etc/vpc-proof/key.pem
 
 auth:
   # Set to true and provide a token to protect the API.
@@ -49,6 +52,14 @@ ratelimit:
   # Per-client steady-state and burst request budgets.
   requests_per_minute: 100
   burst: 20
+
+history:
+  # How many probe run summaries to keep in memory.
+  max_entries: 50
+  # When set, the history is periodically flushed to this JSON file.
+  disk_path: ""
+  # How often the history is flushed to disk.
+  flush_interval: 30s
 
 log:
   # One of debug, info, warn, error.

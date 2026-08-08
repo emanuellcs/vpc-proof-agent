@@ -39,13 +39,13 @@ const envConfig = "VPC_PROOF_CONFIG"
 // Execute runs the vpc-proof CLI with the standard streams and returns the
 // process exit code.
 func Execute() int {
-	return execute(os.Args[1:], os.Stdout, os.Stderr, appDeps{})
+	return execute(os.Args[1:], os.Stdout, os.Stderr, &appDeps{})
 }
 
 // execute runs the CLI with explicit arguments, streams, and dependencies.
 // It is the testable entry point; Execute wraps it with the process's
 // arguments, streams, and production dependencies.
-func execute(args []string, stdout, stderr io.Writer, deps appDeps) int {
+func execute(args []string, stdout, stderr io.Writer, deps *appDeps) int {
 	cmd := newRootCommand(deps)
 	cmd.SetArgs(args)
 	cmd.SetOut(stdout)
@@ -88,7 +88,7 @@ func exitCodeFor(err error) int {
 }
 
 // newRootCommand builds the root command and its full command tree.
-func newRootCommand(deps appDeps) *cobra.Command {
+func newRootCommand(deps *appDeps) *cobra.Command {
 	var cfgFile string
 	var logLevel string
 	var logFormat string
@@ -113,6 +113,9 @@ The tool does not provision AWS resources: it observes, probes, and reports.`,
 		},
 	}
 
+	// The custom completions command replaces Cobra's auto-generated one.
+	root.CompletionOptions.DisableDefaultCmd = true
+
 	root.PersistentFlags().StringVar(&cfgFile, "config", "", "path to a YAML configuration file (overrides VPC_PROOF_CONFIG)")
 	root.PersistentFlags().StringVar(&logLevel, "log-level", "", "log level: debug, info, warn, error (overrides config)")
 	root.PersistentFlags().StringVar(&logFormat, "log-format", "", "log format: json or console (overrides config)")
@@ -131,6 +134,9 @@ The tool does not provision AWS resources: it observes, probes, and reports.`,
 		newDiagnoseCommand(),
 		newReportCommand(),
 		newServeCommand(),
+		newWatchCommand(),
+		newEchoClientCommand(),
+		newCompletionsCommand(),
 	)
 
 	return root
@@ -139,7 +145,7 @@ The tool does not provision AWS resources: it observes, probes, and reports.`,
 // bootstrap loads and validates the configuration, initializes the logger,
 // builds the application container, and injects it into the command context.
 // Any failure aborts the command chain and is reported to the user.
-func bootstrap(cmd *cobra.Command, deps appDeps) error {
+func bootstrap(cmd *cobra.Command, deps *appDeps) error {
 	cfg, errs, err := loadConfiguration(cmd)
 	if err != nil {
 		return fmt.Errorf("configuration: %w", err)

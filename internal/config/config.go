@@ -74,6 +74,8 @@ type Config struct {
 	Cache CacheConfig `yaml:"cache" json:"cache"`
 	// RateLimit configures per-client API rate limiting.
 	RateLimit RateLimitConfig `yaml:"ratelimit" json:"ratelimit"`
+	// History configures the tracking of probe runs over time.
+	History HistoryConfig `yaml:"history" json:"history"`
 	// Log configures structured logging output.
 	Log LogConfig `yaml:"log" json:"log"`
 }
@@ -93,6 +95,10 @@ type ServerConfig struct {
 	// ShutdownTimeout bounds the graceful shutdown window for in-flight
 	// requests.
 	ShutdownTimeout Duration `yaml:"shutdown_timeout" json:"shutdown_timeout"`
+	// TLSCertFile, when set with TLSKeyFile, enables HTTPS serving.
+	TLSCertFile string `yaml:"tls_cert_file" json:"tls_cert_file"`
+	// TLSKeyFile, when set with TLSCertFile, enables HTTPS serving.
+	TLSKeyFile string `yaml:"tls_key_file" json:"tls_key_file"`
 }
 
 // AuthConfig holds API authentication settings.
@@ -138,6 +144,17 @@ type RateLimitConfig struct {
 	Burst int `yaml:"burst" json:"burst"`
 }
 
+// HistoryConfig holds settings for tracking probe runs over time.
+type HistoryConfig struct {
+	// MaxEntries is the maximum number of run summaries kept in memory.
+	MaxEntries int `yaml:"max_entries" json:"max_entries"`
+	// DiskPath, when non-empty, enables periodic persistence of the history
+	// to a JSON file.
+	DiskPath string `yaml:"disk_path" json:"disk_path"`
+	// FlushInterval is how often the history is flushed to disk.
+	FlushInterval Duration `yaml:"flush_interval" json:"flush_interval"`
+}
+
 // LogConfig holds structured logging settings.
 type LogConfig struct {
 	// Level is one of debug, info, warn, or error.
@@ -178,6 +195,10 @@ func Defaults() *Config {
 		RateLimit: RateLimitConfig{
 			RequestsPerMinute: 100,
 			Burst:             20,
+		},
+		History: HistoryConfig{
+			MaxEntries:    50,
+			FlushInterval: Duration(30 * time.Second),
 		},
 		Log: LogConfig{
 			Level:  "info",

@@ -9,11 +9,11 @@ import (
 
 // runCLI executes the CLI with production dependencies.
 func runCLI(args ...string) (stdout, stderr string, code int) {
-	return runCLIWith(appDeps{}, args...)
+	return runCLIWith(&appDeps{}, args...)
 }
 
 // runCLIWith executes the CLI with injected dependencies.
-func runCLIWith(deps appDeps, args ...string) (stdout, stderr string, code int) {
+func runCLIWith(deps *appDeps, args ...string) (stdout, stderr string, code int) {
 	var out, errBuf bytes.Buffer
 	code = execute(args, &out, &errBuf, deps)
 	return out.String(), errBuf.String(), code
