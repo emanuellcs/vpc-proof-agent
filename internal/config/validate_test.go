@@ -26,6 +26,7 @@ func TestValidate(t *testing.T) {
 		{name: "subnet cidr invalid", mutate: func(c *Config) { c.Probes.SubnetCIDR = "not-a-cidr" }, want: "probes.subnet_cidr"},
 		{name: "echo urls empty", mutate: func(c *Config) { c.Probes.EchoURLs = nil }, want: "probes.echo_urls"},
 		{name: "echo url invalid", mutate: func(c *Config) { c.Probes.EchoURLs = []string{"not a url"} }, want: "probes.echo_urls"},
+		{name: "dns host empty", mutate: func(c *Config) { c.Probes.DNSHost = "" }, want: "probes.dns_host"},
 		{name: "probe timeout zero", mutate: func(c *Config) { c.Probes.Timeout = 0 }, want: "probes.timeout"},
 		{name: "max retries negative", mutate: func(c *Config) { c.Probes.MaxRetries = -1 }, want: "probes.max_retries"},
 		{name: "cache ttl zero", mutate: func(c *Config) { c.Cache.ProbeTTL = 0 }, want: "cache.probe_ttl"},

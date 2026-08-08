@@ -3,8 +3,10 @@
 //
 // The root command owns the global persistent flags (--config, --log-level,
 // --log-format) and bootstraps every subcommand: it loads and validates the
-// configuration, initializes the structured logger, and injects both into
-// the command context so subcommands can consume them without re-parsing.
+// configuration, initializes the structured logger, builds the application
+// container (metadata client, probe runner, diagnostic engine), and injects
+// it into the command context so subcommands can consume it without
+// re-parsing.
 package cli
 
 import (
@@ -21,33 +23,72 @@ import (
 	"github.com/emanuellcs/vpc-proof-agent/internal/observability"
 )
 
+// Process exit codes.
+const (
+	// exitCodeOK indicates success.
+	exitCodeOK = 0
+	// exitCodeFailure is the generic failure code and the `check` failure code.
+	exitCodeFailure = 1
+	// exitCodeWarn is the `check` warnings-only code.
+	exitCodeWarn = 2
+)
+
 // envConfig is the environment variable that can point at the config file.
 const envConfig = "VPC_PROOF_CONFIG"
 
-// Execute runs the vpc-proof CLI with the standard streams and exits via the
-// returned error. The caller is responsible for translating the error into
-// an exit code.
-func Execute() error {
-	return execute(os.Args[1:], os.Stdout, os.Stderr)
+// Execute runs the vpc-proof CLI with the standard streams and returns the
+// process exit code.
+func Execute() int {
+	return execute(os.Args[1:], os.Stdout, os.Stderr, appDeps{})
 }
 
-// execute runs the CLI with explicit arguments and streams. It is the
-// testable entry point; Execute wraps it with the process's arguments and
-// streams.
-func execute(args []string, stdout, stderr io.Writer) error {
-	cmd := newRootCommand()
+// execute runs the CLI with explicit arguments, streams, and dependencies.
+// It is the testable entry point; Execute wraps it with the process's
+// arguments, streams, and production dependencies.
+func execute(args []string, stdout, stderr io.Writer, deps appDeps) int {
+	cmd := newRootCommand(deps)
 	cmd.SetArgs(args)
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)
 	if err := cmd.Execute(); err != nil {
 		_, _ = fmt.Fprintf(stderr, "error: %v\n", err)
-		return err
+		return exitCodeFor(err)
 	}
-	return nil
+	return exitCodeOK
+}
+
+// exitCodeError carries an explicit process exit code.
+type exitCodeError struct {
+	code int
+	msg  string
+}
+
+// Error returns the human-readable message.
+func (e *exitCodeError) Error() string {
+	return e.msg
+}
+
+// ExitCode returns the process exit code.
+func (e *exitCodeError) ExitCode() int {
+	return e.code
+}
+
+// exitError builds an exitCodeError.
+func exitError(code int, format string, args ...any) error {
+	return &exitCodeError{code: code, msg: fmt.Sprintf(format, args...)}
+}
+
+// exitCodeFor maps an error to a process exit code.
+func exitCodeFor(err error) int {
+	var exitErr *exitCodeError
+	if errors.As(err, &exitErr) {
+		return exitErr.code
+	}
+	return exitCodeFailure
 }
 
 // newRootCommand builds the root command and its full command tree.
-func newRootCommand() *cobra.Command {
+func newRootCommand(deps appDeps) *cobra.Command {
 	var cfgFile string
 	var logLevel string
 	var logFormat string
@@ -65,7 +106,7 @@ The tool does not provision AWS resources: it observes, probes, and reports.`,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			return bootstrap(cmd)
+			return bootstrap(cmd, deps)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
@@ -96,9 +137,9 @@ The tool does not provision AWS resources: it observes, probes, and reports.`,
 }
 
 // bootstrap loads and validates the configuration, initializes the logger,
-// and injects them into the command context. Any failure aborts the command
-// chain and is reported to the user.
-func bootstrap(cmd *cobra.Command) error {
+// builds the application container, and injects it into the command context.
+// Any failure aborts the command chain and is reported to the user.
+func bootstrap(cmd *cobra.Command, deps appDeps) error {
 	cfg, errs, err := loadConfiguration(cmd)
 	if err != nil {
 		return fmt.Errorf("configuration: %w", err)
@@ -112,7 +153,12 @@ func bootstrap(cmd *cobra.Command) error {
 		return err
 	}
 
-	withAppContext(cmd, cfg, logger)
+	app, err := buildApp(cfg, logger, deps)
+	if err != nil {
+		return fmt.Errorf("initialize application: %w", err)
+	}
+
+	withAppContext(cmd, app)
 	return nil
 }
 

@@ -54,9 +54,10 @@ Read more in [ARCHITECTURE.md](./ARCHITECTURE.md). A Portuguese version of this 
 | Observability | Structured logging (JSON/Text), request IDs, Prometheus-compatible metrics |
 | Operations | systemd service definition, graceful shutdown, config via flags/env/files |
 
-> Status: the repository is currently at **Commit 2**. The configuration
-> system, structured logging, and the full CLI skeleton are implemented; the
-> probes, diagnostics, and REST API are intentionally not implemented yet.
+> Status: the repository is currently at **Commit 4**. The configuration
+> system, structured logging, the full CLI (status/check/diagnose/report), the
+> probe engine, the diagnostic rule matrix, and the report engine are
+> implemented. The REST API is intentionally not implemented yet.
 
 ## Target AWS Environment
 
@@ -168,6 +169,9 @@ make run            # runs the scaffold binary
 | `make tidy` | Tidy modules |
 | `make tools` | Install development tools (mockgen) |
 | `make mocks` | Generate mocks (`go generate ./...`) |
+| `make run-status` | Quick status against the current environment (graceful under LocalStack) |
+| `make run-check` | Full probe suite; the exit code doubles as a CI gateway |
+| `make run-report` | Generate a Markdown evidence report to stdout |
 | `make localstack-setup` | Provision the lab in LocalStack |
 | `make localstack-teardown` | Tear down the lab |
 | `make clean` | Remove build artifacts |
@@ -202,16 +206,50 @@ prefixed with the offending field (for example `server.port: must be between
 | Command | Description |
 | --- | --- |
 | `vpc-proof version` | Print version, commit, build date, Go version, and platform |
-| `vpc-proof status` | Quick summary of the instance (stub) |
-| `vpc-proof check` | Run the full probe suite (stub) |
-| `vpc-proof diagnose` | Run probes and output troubleshooting hints (stub) |
-| `vpc-proof report` | Generate an evidence report; `--format json|markdown|text`, `--output <path|->` (stub) |
+| `vpc-proof status` | Quick summary of the instance (metadata + default route) |
+| `vpc-proof check` | Run the full probe suite; CI/CD gateway exit code |
+| `vpc-proof diagnose` | Run probes and output troubleshooting hints |
+| `vpc-proof report` | Generate an evidence report; `--format json|markdown|text`, `--output <path|->` |
 | `vpc-proof serve` | Start the REST API; `--addr`, `--port` (stub) |
 | `vpc-proof validate-config` | Load and validate the configuration |
 
-The root command loads and validates the configuration and initializes
-structured logging (JSON or console) before any subcommand runs; failures
+The root command loads and validates the configuration, initializes structured
+logging (JSON or console), and builds the application container (metadata
+client, probe runner, diagnostic engine) before any subcommand runs; failures
 abort with a non-zero exit code.
+
+## Reports & Exit Codes
+
+### Reports
+
+`vpc-proof report` runs the probe suite, derives troubleshooting hints, and
+renders a professional evidence document in three formats:
+
+```bash
+vpc-proof report --format json                                # machine-readable
+vpc-proof report --format markdown --output evidence.md       # for the academic PDF
+vpc-proof report --format text                                # console-friendly
+```
+
+The Markdown report contains sections for instance metadata, a network
+summary, aggregated results, a probe-results table, and the diagnostic hints,
+so it can be pasted directly into a report or PDF. When a field cannot be
+retrieved (for example against LocalStack, which has no real EC2 metadata) it
+is rendered as `N/A` instead of failing.
+
+### Exit codes
+
+`vpc-proof check` is designed for CI/CD pipelines and shell scripts. It maps
+the overall probe status to the process exit code:
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Overall status is **pass** or **skip** |
+| `1` | At least one probe **failed** |
+| `2` | No failures, but at least one probe **warned** |
+
+`status` and `report` always exit `0` on success (they are informational),
+while `validate-config` exits non-zero when the configuration is invalid.
 
 ## Security
 

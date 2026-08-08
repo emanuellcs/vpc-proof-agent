@@ -14,7 +14,7 @@ func (c *Config) Validate() []error {
 	var errs []error
 	errs = append(errs, validateServer(c.Server)...)
 	errs = append(errs, validateAuth(c.Auth)...)
-	errs = append(errs, validateProbes(c.Probes)...)
+	errs = append(errs, validateProbes(&c.Probes)...)
 	errs = append(errs, validateCache(c.Cache)...)
 	errs = append(errs, validateRateLimit(c.RateLimit)...)
 	errs = append(errs, validateLog(c.Log)...)
@@ -49,7 +49,7 @@ func validateAuth(a AuthConfig) []error {
 	return errs
 }
 
-func validateProbes(p ProbesConfig) []error {
+func validateProbes(p *ProbesConfig) []error {
 	var errs []error
 	if _, err := netip.ParsePrefix(p.VpcCIDR); err != nil {
 		errs = append(errs, fmt.Errorf("probes.vpc_cidr: invalid CIDR %q", p.VpcCIDR))
@@ -64,6 +64,9 @@ func validateProbes(p ProbesConfig) []error {
 		if !isHTTPURL(u) {
 			errs = append(errs, fmt.Errorf("probes.echo_urls: invalid HTTP(S) URL %q", u))
 		}
+	}
+	if p.DNSHost == "" {
+		errs = append(errs, fmt.Errorf("probes.dns_host: must not be empty"))
 	}
 	if p.Timeout.NonPositive() {
 		errs = append(errs, fmt.Errorf("probes.timeout: must be a positive duration, got %s", p.Timeout.String()))

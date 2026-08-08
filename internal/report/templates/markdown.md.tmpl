@@ -1,0 +1,52 @@
+# VPC Proof Agent — Evidence Report
+
+| Field | Value |
+| --- | --- |
+| Overall status | {{ .Summary.Status }} |
+| Generated at | {{ .GeneratedAt.Format "2006-01-02 15:04:05 MST" }} |
+| Agent | {{ .Agent.Name }} {{ .Agent.Version }} (commit {{ .Agent.Commit }}, built {{ .Agent.BuildDate }}) |
+| Go runtime | {{ .Agent.GoVersion }} |
+| Platform | {{ .Agent.Platform }} |
+
+## 1. Instance
+
+| Field | Value |
+| --- | --- |
+| Instance ID | {{ or .Instance.InstanceID "N/A" }} |
+| Availability Zone | {{ or .Instance.AvailabilityZone "N/A" }} |
+| Private IP | {{ or .Instance.PrivateIP "N/A" }} |
+| Public IP | {{ or .Instance.PublicIP "N/A" }} |
+| MAC Address | {{ or .Instance.MACAddress "N/A" }} |
+| VPC CIDR | {{ or .Instance.VpcCIDR "N/A" }} |
+| Subnet CIDR | {{ or .Instance.SubnetCIDR "N/A" }} |
+
+## 2. Network Summary
+
+| Field | Value |
+| --- | --- |
+| Default Gateway | {{ or .Network.DefaultGateway "N/A" }} |
+| Default Interface | {{ or .Network.DefaultInterface "N/A" }} |
+| Primary IP | {{ or .Network.PrimaryIP "N/A" }} |
+| DNS Resolved Addresses | {{ or .Network.DNSAddresses "N/A" }} |
+
+## 3. Summary
+
+| Metric | Count |
+| --- | --- |
+| Total | {{ .Summary.Total }} |
+| Passed | {{ .Summary.Passed }} |
+| Failed | {{ .Summary.Failed }} |
+| Warned | {{ .Summary.Warned }} |
+| Skipped | {{ .Summary.Skipped }} |
+
+## 4. Probe Results
+
+| ID | Status | Duration | Message |
+| --- | --- | --- | --- |
+{{ range .Probes.Results }}| {{ .ID }} | {{ .Status }} | {{ .Duration }} | {{ .Message }} |
+{{ end }}
+## 5. Diagnostics
+
+{{ if .Diagnostics }}{{ range .Diagnostics }}- **{{ .Severity }}**: {{ .Message }}
+{{ end }}{{ else }}No issues detected.
+{{ end }}

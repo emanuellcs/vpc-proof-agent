@@ -34,6 +34,8 @@ probes:
   # External services used to discover the public IP.
   echo_urls:
     - https://checkip.amazonaws.com
+  # Hostname resolved to verify DNS resolution works.
+  dns_host: amazon.com
   timeout: 5s
   max_retries: 2
 

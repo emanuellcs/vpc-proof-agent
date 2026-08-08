@@ -40,6 +40,9 @@ func TestDefaults(t *testing.T) {
 	if len(c.Probes.EchoURLs) != 1 || c.Probes.EchoURLs[0] != "https://checkip.amazonaws.com" {
 		t.Errorf("Probes.EchoURLs = %v, want single checkip URL", c.Probes.EchoURLs)
 	}
+	if c.Probes.DNSHost != "amazon.com" {
+		t.Errorf("Probes.DNSHost = %q, want %q", c.Probes.DNSHost, "amazon.com")
+	}
 	if got := c.Probes.Timeout.Value(); got != 5*time.Second {
 		t.Errorf("Probes.Timeout = %s, want 5s", got)
 	}

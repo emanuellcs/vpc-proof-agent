@@ -112,6 +112,9 @@ type ProbesConfig struct {
 	SubnetCIDR string `yaml:"subnet_cidr" json:"subnet_cidr"`
 	// EchoURLs are external services used to discover the public IP.
 	EchoURLs []string `yaml:"echo_urls" json:"echo_urls"`
+	// DNSHost is the hostname resolved to verify DNS works, for example
+	// "amazon.com".
+	DNSHost string `yaml:"dns_host" json:"dns_host"`
 	// Timeout bounds each individual probe.
 	Timeout Duration `yaml:"timeout" json:"timeout"`
 	// MaxRetries is the number of retries for transient probe failures.
@@ -161,6 +164,7 @@ func Defaults() *Config {
 			VpcCIDR:    "10.0.0.0/16",
 			SubnetCIDR: "10.0.1.0/24",
 			EchoURLs:   []string{"https://checkip.amazonaws.com"},
+			DNSHost:    "amazon.com",
 			Timeout:    Duration(5 * time.Second),
 			MaxRetries: 2,
 		},

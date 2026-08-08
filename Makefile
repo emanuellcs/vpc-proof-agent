@@ -79,6 +79,18 @@ mocks: ## Generate mocks via go:generate directives
 
 # --- LocalStack ----------------------------------------------------------------
 
+.PHONY: run-status
+run-status: build ## Quick instance status (graceful under LocalStack)
+	$(BINARY) status
+
+.PHONY: run-check
+run-check: build ## Run the full probe suite (exit code is a CI gateway)
+	$(BINARY) check
+
+.PHONY: run-report
+run-report: build ## Generate a Markdown evidence report to stdout
+	$(BINARY) report --format markdown
+
 .PHONY: localstack-setup
 localstack-setup: ## Provision the AWS lab inside LocalStack
 	./scripts/setup-localstack.sh

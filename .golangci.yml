@@ -46,6 +46,11 @@ linters:
     - whitespace
     - copyloopvar
   settings:
+    recvcheck:
+      # Status.UnmarshalJSON must use a pointer receiver to satisfy
+      # encoding/json, so it is excluded from the receiver-consistency check.
+      exclusions:
+        - "Status.UnmarshalJSON"
     govet:
       enable:
         - shadow

@@ -1,0 +1,41 @@
+================================================================
+ VPC PROOF AGENT — EVIDENCE REPORT
+================================================================
+ Overall status      : {{ .Summary.Status }}
+ Generated at        : {{ .GeneratedAt.Format "2006-01-02 15:04:05 MST" }}
+ Agent               : {{ .Agent.Name }} {{ .Agent.Version }} (commit {{ .Agent.Commit }})
+ Go runtime          : {{ .Agent.GoVersion }}
+ Platform            : {{ .Agent.Platform }}
+
+--- Instance ----------------------------------------------------
+ Instance ID         : {{ or .Instance.InstanceID "N/A" }}
+ Availability Zone   : {{ or .Instance.AvailabilityZone "N/A" }}
+ Private IP          : {{ or .Instance.PrivateIP "N/A" }}
+ Public IP           : {{ or .Instance.PublicIP "N/A" }}
+ MAC Address         : {{ or .Instance.MACAddress "N/A" }}
+ VPC CIDR            : {{ or .Instance.VpcCIDR "N/A" }}
+ Subnet CIDR         : {{ or .Instance.SubnetCIDR "N/A" }}
+
+--- Network Summary ---------------------------------------------
+ Default Gateway     : {{ or .Network.DefaultGateway "N/A" }}
+ Default Interface   : {{ or .Network.DefaultInterface "N/A" }}
+ Primary IP          : {{ or .Network.PrimaryIP "N/A" }}
+ DNS Resolved Addrs  : {{ or .Network.DNSAddresses "N/A" }}
+
+--- Summary -----------------------------------------------------
+ Total               : {{ .Summary.Total }}
+ Passed              : {{ .Summary.Passed }}
+ Failed              : {{ .Summary.Failed }}
+ Warned              : {{ .Summary.Warned }}
+ Skipped             : {{ .Summary.Skipped }}
+
+--- Probe Results ------------------------------------------------
+ {{ printf "%-20s %-7s %-12s %s" "ID" "STATUS" "DURATION" "MESSAGE" }}
+ {{ printf "%-20s %-7s %-12s %s" "--------------------" "-------" "------------" "-------" }}
+{{ range .Probes.Results }}
+ {{ printf "%-20s %-7s %-12s %s" .ID .Status .Duration .Message }}{{ end }}
+
+--- Diagnostics -------------------------------------------------
+{{ if .Diagnostics }}{{ range .Diagnostics }}
+ - [{{ .Severity }}] {{ .Message }}{{ end }}{{ else }}
+ No issues detected.{{ end }}

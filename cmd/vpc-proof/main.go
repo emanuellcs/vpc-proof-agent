@@ -1,7 +1,8 @@
 // Package main is the entry point for the vpc-proof binary.
 //
 // It delegates entirely to the cli package, which owns the Cobra command
-// tree, configuration bootstrap, and structured logging.
+// tree, configuration bootstrap, structured logging, and process exit
+// codes.
 package main
 
 import (
@@ -10,9 +11,7 @@ import (
 	"github.com/emanuellcs/vpc-proof-agent/internal/cli"
 )
 
-// main runs the CLI and maps any execution error to a non-zero exit code.
+// main runs the CLI and propagates its exit code to the process.
 func main() {
-	if err := cli.Execute(); err != nil {
-		os.Exit(1)
-	}
+	os.Exit(cli.Execute())
 }

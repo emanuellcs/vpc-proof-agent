@@ -1,6 +1,8 @@
 package probe
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -29,6 +31,33 @@ func (s Status) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+// MarshalJSON encodes the status as its lowercase name, keeping JSON
+// reports human-readable.
+func (s Status) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.String())
+}
+
+// UnmarshalJSON decodes a status from its lowercase name.
+func (s *Status) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := json.Unmarshal(data, &text); err != nil {
+		return err
+	}
+	switch text {
+	case "pass":
+		*s = StatusPass
+	case "fail":
+		*s = StatusFail
+	case "warn":
+		*s = StatusWarn
+	case "skip":
+		*s = StatusSkip
+	default:
+		return fmt.Errorf("invalid probe status %q", text)
+	}
+	return nil
 }
 
 // Result is the outcome of a single probe execution.

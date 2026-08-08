@@ -1,0 +1,111 @@
+{
+  "agent": {
+    "name": "vpc-proof",
+    "version": "1.2.3",
+    "commit": "abc1234",
+    "build_date": "2026-08-08T12:00:00Z",
+    "go_version": "go1.26.5",
+    "platform": "linux/amd64"
+  },
+  "instance": {
+    "instance_id": "i-0123456789abcdef0",
+    "availability_zone": "us-east-1a",
+    "private_ip": "10.0.1.42",
+    "public_ip": "203.0.113.7",
+    "mac_address": "0a:1b:2c:3d:4e:5f",
+    "subnet_cidr": "10.0.1.0/24",
+    "vpc_cidr": "10.0.0.0/16"
+  },
+  "network": {
+    "default_gateway": "10.0.2.2",
+    "default_interface": "eth0",
+    "primary_ip": "10.0.1.42",
+    "dns_addresses": "203.0.113.10, 203.0.113.11"
+  },
+  "summary": {
+    "status": "warn",
+    "passed": 5,
+    "failed": 1,
+    "warned": 1,
+    "skipped": 0,
+    "total": 7,
+    "duration": 3000000000
+  },
+  "probes": {
+    "started_at": "2026-08-08T12:00:00Z",
+    "duration": 3000000000,
+    "status": "warn",
+    "results": [
+      {
+        "id": "metadata",
+        "name": "IMDSv2 metadata",
+        "status": "pass",
+        "duration": 10000000,
+        "message": "IMDSv2 metadata accessible",
+        "details": {
+          "instance_id": "i-0123456789abcdef0"
+        }
+      },
+      {
+        "id": "vpc_ownership",
+        "name": "VPC ownership",
+        "status": "pass",
+        "duration": 20000000,
+        "message": "private IP 10.0.1.42 is inside VPC 10.0.0.0/16"
+      },
+      {
+        "id": "subnet_ownership",
+        "name": "Subnet ownership",
+        "status": "fail",
+        "duration": 30000000,
+        "message": "private IP 10.0.1.42 is not inside subnet 10.0.2.0/24",
+        "hint": "Verify the EC2 instance was launched in the correct Subnet (10.0.1.0/24)."
+      },
+      {
+        "id": "default_route",
+        "name": "Default route",
+        "status": "pass",
+        "duration": 40000000,
+        "message": "default route via eth0 (gateway 10.0.2.2)"
+      },
+      {
+        "id": "dns",
+        "name": "DNS resolution",
+        "status": "pass",
+        "duration": 50000000,
+        "message": "resolved amazon.com",
+        "details": {
+          "addresses": "203.0.113.10, 203.0.113.11",
+          "host": "amazon.com"
+        }
+      },
+      {
+        "id": "internet_https",
+        "name": "Outbound HTTPS",
+        "status": "pass",
+        "duration": 60000000,
+        "message": "outbound HTTPS to https://checkip.amazonaws.com succeeded"
+      },
+      {
+        "id": "public_ip_consistency",
+        "name": "Public IP consistency",
+        "status": "warn",
+        "duration": 70000000,
+        "message": "instance has no public IP assigned"
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "rule_id": "subnet-placement",
+      "severity": "critical",
+      "message": "Verify the EC2 instance was launched in the correct Subnet (10.0.1.0/24)."
+    },
+    {
+      "rule_id": "public-ip-assignment",
+      "severity": "warning",
+      "message": "Ensure the Subnet has 'Auto-assign public IP' enabled and the instance has a public IP associated."
+    }
+  ],
+  "generated_at": "2026-08-08T12:00:00Z"
+}

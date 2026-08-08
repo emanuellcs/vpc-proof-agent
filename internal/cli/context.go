@@ -6,18 +6,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/emanuellcs/vpc-proof-agent/internal/config"
-	"github.com/emanuellcs/vpc-proof-agent/internal/observability"
 )
 
-// appContextKey is the context key carrying the loaded application state.
+// appContextKey is the context key carrying the initialized application.
 type appContextKey struct{}
-
-// appContext holds the dependencies injected into the command context by the
-// root command's PersistentPreRunE.
-type appContext struct {
-	config *config.Config
-	logger *observability.Logger
-}
 
 // validationContextKey is the context key used by validate-config to carry
 // the load results without aborting on failure.
@@ -31,28 +23,24 @@ type validationResult struct {
 	loadErr error
 }
 
-// withAppContext stores cfg and logger in the command context.
-func withAppContext(cmd *cobra.Command, cfg *config.Config, logger *observability.Logger) {
-	ctx := context.WithValue(cmd.Context(), appContextKey{}, &appContext{config: cfg, logger: logger})
+// withAppContext stores the application container in the command context.
+func withAppContext(cmd *cobra.Command, app *App) {
+	ctx := context.WithValue(cmd.Context(), appContextKey{}, app)
 	cmd.SetContext(ctx)
+}
+
+// appFrom returns the initialized application, or nil when unavailable.
+func appFrom(cmd *cobra.Command) *App {
+	app, _ := cmd.Context().Value(appContextKey{}).(*App)
+	return app
 }
 
 // configFrom returns the loaded configuration, or nil when unavailable.
 func configFrom(cmd *cobra.Command) *config.Config {
-	app, _ := cmd.Context().Value(appContextKey{}).(*appContext)
-	if app == nil {
-		return nil
+	if app := appFrom(cmd); app != nil {
+		return app.config
 	}
-	return app.config
-}
-
-// loggerFrom returns the initialized logger, or nil when unavailable.
-func loggerFrom(cmd *cobra.Command) *observability.Logger {
-	app, _ := cmd.Context().Value(appContextKey{}).(*appContext)
-	if app == nil {
-		return nil
-	}
-	return app.logger
+	return nil
 }
 
 // withValidationResult stores the result of a load/validate pass.
