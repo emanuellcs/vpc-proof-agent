@@ -1,0 +1,38 @@
+# =============================================================
+# vpc-proof-agent — systemd unit
+#
+# Targets Amazon Linux 2 (systemd). Adjust paths to match your
+# installation (see deploy/README.md).
+#
+# Install:
+#   sudo cp deploy/systemd/vpc-proof.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now vpc-proof
+# =============================================================
+
+[Unit]
+Description=VPC Proof Agent - AWS networking diagnostic and evidence-gathering tool
+Documentation=https://github.com/emanuellcs/vpc-proof-agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vpc-proof
+Group=vpc-proof
+ExecStart=/usr/local/bin/vpc-proof server
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+# Environment file for configuration (token, rate limits, log level, ...)
+EnvironmentFile=-/etc/vpc-proof/vpc-proof.env
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

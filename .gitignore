@@ -1,32 +1,57 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# =============================================================
+# vpc-proof-agent — .gitignore
+# Covers Go tooling, LocalStack, IDEs, OS files, and build output.
+# =============================================================
+
+# --- Go: binaries and plugins ---
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
+# Test binaries, built with `go test -c`
 *.test
 
-# Code coverage profiles and other test artifacts
+# --- Go: coverage and analysis artifacts ---
 *.out
 coverage.*
 *.coverprofile
 profile.cov
+*.cover
 
-# Dependency directories (remove the comment below to include it)
+# --- Go: dependency directories and workspaces ---
 # vendor/
-
-# Go workspace file
 go.work
 go.work.sum
 
-# env file
-.env
+# --- Build output ---
+/bin/
+/dist/
+/build/
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# --- Environment files (keep the example template) ---
+.env
+.env.*
+!.env.example
+
+# --- LocalStack ---
+.localstack/
+localstack-data/
+lstk/
+localstack*.log
+# Generated resource IDs file written by scripts/setup-localstack.sh
+scripts/.localstack-resources.env
+
+# --- IDE / editor ---
+.idea/
+.vscode/
+*.iml
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~

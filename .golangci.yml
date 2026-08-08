@@ -1,0 +1,80 @@
+# =============================================================
+# vpc-proof-agent — golangci-lint configuration
+# Schema: golangci-lint v2 (see https://golangci-lint.run/usage/configuration/)
+# =============================================================
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  relative-path-mode: gomod
+  go: "1.26"
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/emanuellcs/vpc-proof-agent)
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - errorlint
+    - errname
+    - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - intrange
+    - misspell
+    - nilerr
+    - recvcheck
+    - revive
+    - staticcheck
+    - testifylint
+    - unused
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    - copyloopvar
+  settings:
+    govet:
+      enable:
+        - shadow
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+    gosec:
+      config:
+        global:
+          exclude-generated: true
+  exclusions:
+    generated: lax
+    warn-unused: true
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+    rules:
+      - path: _test\.go
+        linters:
+          - gocritic
+          - gosec
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
