@@ -20,6 +20,7 @@ func TestValidate(t *testing.T) {
 		{name: "read timeout zero", mutate: func(c *Config) { c.Server.ReadTimeout = 0 }, want: "server.read_timeout"},
 		{name: "write timeout negative", mutate: func(c *Config) { c.Server.WriteTimeout = Duration(-time.Second) }, want: "server.write_timeout"},
 		{name: "idle timeout zero", mutate: func(c *Config) { c.Server.IdleTimeout = 0 }, want: "server.idle_timeout"},
+		{name: "shutdown timeout zero", mutate: func(c *Config) { c.Server.ShutdownTimeout = 0 }, want: "server.shutdown_timeout"},
 		{name: "auth token empty when enabled", mutate: func(c *Config) { c.Auth.Enabled = true; c.Auth.Token = "" }, want: "auth.token"},
 		{name: "auth disabled with empty token valid", mutate: func(c *Config) { c.Auth.Token = "" }, want: ""},
 		{name: "vpc cidr invalid", mutate: func(c *Config) { c.Probes.VpcCIDR = "10.0.0.0" }, want: "probes.vpc_cidr"},

@@ -95,6 +95,7 @@ func applyEnv(cfg *Config) error {
 		{name: envPrefix + "SERVER_READ_TIMEOUT", apply: setDuration(&cfg.Server.ReadTimeout)},
 		{name: envPrefix + "SERVER_WRITE_TIMEOUT", apply: setDuration(&cfg.Server.WriteTimeout)},
 		{name: envPrefix + "SERVER_IDLE_TIMEOUT", apply: setDuration(&cfg.Server.IdleTimeout)},
+		{name: envPrefix + "SERVER_SHUTDOWN_TIMEOUT", apply: setDuration(&cfg.Server.ShutdownTimeout)},
 		{name: envPrefix + "AUTH_ENABLED", apply: setBool(&cfg.Auth.Enabled)},
 		{name: envPrefix + "AUTH_TOKEN", apply: setStr(&cfg.Auth.Token)},
 		{name: envPrefix + "PROBES_VPC_CIDR", apply: setStr(&cfg.Probes.VpcCIDR)},

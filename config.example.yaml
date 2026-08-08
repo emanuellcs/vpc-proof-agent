@@ -16,6 +16,8 @@ server:
   read_timeout: 10s
   write_timeout: 10s
   idle_timeout: 60s
+  # Graceful shutdown window for in-flight requests.
+  shutdown_timeout: 10s
 
 auth:
   # Set to true and provide a token to protect the API.

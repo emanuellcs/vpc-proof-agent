@@ -3,6 +3,7 @@ package observability
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -151,6 +152,24 @@ func TestRedactionInWith(t *testing.T) {
 	}
 	if !strings.Contains(out, "https://example.com") {
 		t.Errorf("non-sensitive field missing, got %s", out)
+	}
+}
+
+func TestWarnAndErrorLevels(t *testing.T) {
+	l, buf := newTestLogger(t, "info", "json")
+
+	l.Warn("a warning", Str("key", "value"))
+	l.Error("an error", Error(errors.New("boom")))
+
+	out := buf.String()
+	if !strings.Contains(out, `"level":"warn"`) || !strings.Contains(out, `"msg":"a warning"`) {
+		t.Errorf("warn entry malformed: %s", out)
+	}
+	if !strings.Contains(out, `"level":"error"`) || !strings.Contains(out, `"msg":"an error"`) {
+		t.Errorf("error entry malformed: %s", out)
+	}
+	if !strings.Contains(out, `"error":"boom"`) {
+		t.Errorf("error detail missing: %s", out)
 	}
 }
 

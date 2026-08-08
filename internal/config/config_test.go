@@ -23,6 +23,9 @@ func TestDefaults(t *testing.T) {
 	if got := c.Server.IdleTimeout.Value(); got != 60*time.Second {
 		t.Errorf("Server.IdleTimeout = %s, want 60s", got)
 	}
+	if got := c.Server.ShutdownTimeout.Value(); got != 10*time.Second {
+		t.Errorf("Server.ShutdownTimeout = %s, want 10s", got)
+	}
 
 	if c.Auth.Enabled {
 		t.Error("Auth.Enabled = true, want false (fail-safe default)")

@@ -53,26 +53,6 @@ func TestValidateConfigMissingFile(t *testing.T) {
 	}
 }
 
-func TestServeFlags(t *testing.T) {
-	stdout, _, code := runCLI("serve", "--addr", "127.0.0.1", "--port", "9090")
-	if code != exitCodeOK {
-		t.Fatalf("serve exit code = %d, want 0", code)
-	}
-	if !strings.Contains(stdout, "127.0.0.1:9090") {
-		t.Errorf("stdout should show the overridden listen address, got %q", stdout)
-	}
-}
-
-func TestServeUsesConfigDefaults(t *testing.T) {
-	stdout, _, code := runCLI("serve")
-	if code != exitCodeOK {
-		t.Fatalf("serve exit code = %d, want 0", code)
-	}
-	if !strings.Contains(stdout, "0.0.0.0:8080") {
-		t.Errorf("stdout should show the default listen address, got %q", stdout)
-	}
-}
-
 func TestReportInvalidFormat(t *testing.T) {
 	_, stderr, code := runCLI("report", "--format", "xml")
 	if code != exitCodeFailure {

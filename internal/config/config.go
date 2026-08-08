@@ -90,6 +90,9 @@ type ServerConfig struct {
 	WriteTimeout Duration `yaml:"write_timeout" json:"write_timeout"`
 	// IdleTimeout bounds keeping a connection idle.
 	IdleTimeout Duration `yaml:"idle_timeout" json:"idle_timeout"`
+	// ShutdownTimeout bounds the graceful shutdown window for in-flight
+	// requests.
+	ShutdownTimeout Duration `yaml:"shutdown_timeout" json:"shutdown_timeout"`
 }
 
 // AuthConfig holds API authentication settings.
@@ -150,11 +153,12 @@ type LogConfig struct {
 func Defaults() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Addr:         "0.0.0.0",
-			Port:         8080,
-			ReadTimeout:  Duration(10 * time.Second),
-			WriteTimeout: Duration(10 * time.Second),
-			IdleTimeout:  Duration(60 * time.Second),
+			Addr:            "0.0.0.0",
+			Port:            8080,
+			ReadTimeout:     Duration(10 * time.Second),
+			WriteTimeout:    Duration(10 * time.Second),
+			IdleTimeout:     Duration(60 * time.Second),
+			ShutdownTimeout: Duration(10 * time.Second),
 		},
 		Auth: AuthConfig{
 			Enabled:     false,

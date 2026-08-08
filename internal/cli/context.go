@@ -35,14 +35,6 @@ func appFrom(cmd *cobra.Command) *App {
 	return app
 }
 
-// configFrom returns the loaded configuration, or nil when unavailable.
-func configFrom(cmd *cobra.Command) *config.Config {
-	if app := appFrom(cmd); app != nil {
-		return app.config
-	}
-	return nil
-}
-
 // withValidationResult stores the result of a load/validate pass.
 func withValidationResult(cmd *cobra.Command, result validationResult) {
 	ctx := context.WithValue(cmd.Context(), validationContextKey{}, result)

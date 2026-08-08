@@ -108,6 +108,7 @@ func TestLoadEnvOverrides(t *testing.T) {
 	t.Setenv("VPC_PROOF_PROBES_DNS_HOST", "aws.amazon.com")
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", "https://api.ipify.org, https://checkip.amazonaws.com")
 	t.Setenv("VPC_PROOF_SERVER_READ_TIMEOUT", "2s")
+	t.Setenv("VPC_PROOF_SERVER_SHUTDOWN_TIMEOUT", "20s")
 
 	cfg, err := Load(LoadOptions{})
 	if err != nil {
@@ -130,6 +131,9 @@ func TestLoadEnvOverrides(t *testing.T) {
 	}
 	if got := cfg.Server.ReadTimeout.Value(); got != 2*time.Second {
 		t.Errorf("Server.ReadTimeout = %s, want 2s", got)
+	}
+	if got := cfg.Server.ShutdownTimeout.Value(); got != 20*time.Second {
+		t.Errorf("Server.ShutdownTimeout = %s, want 20s", got)
 	}
 }
 

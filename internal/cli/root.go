@@ -82,7 +82,7 @@ func exitError(code int, format string, args ...any) error {
 func exitCodeFor(err error) int {
 	var exitErr *exitCodeError
 	if errors.As(err, &exitErr) {
-		return exitErr.code
+		return exitErr.ExitCode()
 	}
 	return exitCodeFailure
 }

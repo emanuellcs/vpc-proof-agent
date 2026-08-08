@@ -54,10 +54,10 @@ Read more in [ARCHITECTURE.md](./ARCHITECTURE.md). A Portuguese version of this 
 | Observability | Structured logging (JSON/Text), request IDs, Prometheus-compatible metrics |
 | Operations | systemd service definition, graceful shutdown, config via flags/env/files |
 
-> Status: the repository is currently at **Commit 4**. The configuration
+> Status: the repository is currently at **Commit 5**. The configuration
 > system, structured logging, the full CLI (status/check/diagnose/report), the
-> probe engine, the diagnostic rule matrix, and the report engine are
-> implemented. The REST API is intentionally not implemented yet.
+> probe engine, the diagnostic rule matrix, the report engine, and the public
+> REST API are implemented.
 
 ## Target AWS Environment
 
@@ -250,6 +250,47 @@ the overall probe status to the process exit code:
 
 `status` and `report` always exit `0` on success (they are informational),
 while `validate-config` exits non-zero when the configuration is invalid.
+
+## REST API
+
+Start the public REST API server:
+
+```bash
+vpc-proof serve                # binds to server.addr:server.port (default 0.0.0.0:8080)
+vpc-proof serve --port 9090    # override the listen port
+```
+
+The server listens for `SIGINT`/`SIGTERM` and shuts down gracefully within
+`server.shutdown_timeout`. On startup it logs the listen address, whether
+authentication is enabled, and the configured rate limits.
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /healthz` | Liveness check |
+| `GET /readyz` | Readiness check (503 when dependencies are missing) |
+| `GET /api/v1/info` | Agent build info and instance metadata |
+| `GET /api/v1/status` | Aggregated probe status and counts |
+| `GET /api/v1/network` | Default gateway, interface, primary IP, DNS addresses |
+| `GET /api/v1/probe` | Full probe report (cached) |
+| `GET /api/v1/report` | Evidence report; `?format=json\|markdown\|text` (default json) |
+| `GET /api/v1/echo` | Proves external reachability: reflects the requester IP, User-Agent, and request time |
+| `GET /metrics` | Prometheus-compatible text metrics |
+
+Heavy probe endpoints are cached for `cache.probe_ttl`; send
+`X-Force-Refresh: true` (on an authenticated request) to bypass the cache.
+Every response carries an `X-Request-ID`, and errors are returned as JSON with
+the request ID and timestamp.
+
+### Authentication & rate limiting
+
+- When `auth.enabled` is true, requests must send `Authorization: Bearer
+  <token>`; the configured `auth.public_paths` (e.g. `/healthz`, `/readyz`,
+  `/metrics`) are exempt.
+- Per-client-IP rate limiting uses a token bucket from `ratelimit`; exceeded
+  clients receive `429` with a `Retry-After` header. Infrastructure endpoints
+  are never throttled.
+- The `/api/v1/echo` endpoint honors `X-Forwarded-For`/`X-Real-IP` before
+  falling back to the direct connection address.
 
 ## Security
 

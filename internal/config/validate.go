@@ -38,6 +38,9 @@ func validateServer(s ServerConfig) []error {
 	if s.IdleTimeout.NonPositive() {
 		errs = append(errs, fmt.Errorf("server.idle_timeout: must be a positive duration, got %s", s.IdleTimeout.String()))
 	}
+	if s.ShutdownTimeout.NonPositive() {
+		errs = append(errs, fmt.Errorf("server.shutdown_timeout: must be a positive duration, got %s", s.ShutdownTimeout.String()))
+	}
 	return errs
 }
 
