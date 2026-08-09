@@ -37,7 +37,7 @@ build: ## Build the binary into bin/vpc-proof (with version ldflags)
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/vpc-proof
 
 .PHONY: run
-run: ## Run the scaffold binary
+run: ## Run the vpc-proof binary
 	$(GO) run ./cmd/vpc-proof
 
 .PHONY: install
