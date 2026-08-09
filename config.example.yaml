@@ -1,4 +1,4 @@
-# vpc-proof-agent — example configuration
+# vpc-proof-agent: example configuration
 #
 # Copy this file to vpc-proof.yaml (or point the --config flag at it) and
 # adjust the values. Everything shown here matches the built-in defaults.
@@ -36,12 +36,19 @@ probes:
   # Expected network layout the probes validate against.
   vpc_cidr: 10.0.0.0/16
   subnet_cidr: 10.0.1.0/24
-  # External services used to discover the public IP.
+  # External services used to discover the public IP. The first entry is also
+  # used by the outbound-HTTP and clock-skew probes.
   echo_urls:
     - https://checkip.amazonaws.com
   # Hostname resolved to verify DNS resolution works.
   dns_host: amazon.com
+  # Overrides the EC2 instance metadata endpoint. When empty, the default
+  # link-local address (http://169.254.169.254) is used. Useful for testing
+  # against a mock IMDS or for IMDS proxies.
+  imds_base_url: ""
+  # Per-probe timeout, expressed as a Go duration string.
   timeout: 5s
+  # Number of retries for transient probe failures.
   max_retries: 2
 
 cache:

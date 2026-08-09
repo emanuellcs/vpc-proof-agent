@@ -1,8 +1,8 @@
 # =============================================================
-# vpc-proof-agent — systemd unit
+# vpc-proof-agent: systemd unit
 #
 # Targets Amazon Linux 2 (systemd). Adjust paths to match your
-# installation (see deploy/README.md).
+# installation (see deploy/README.md and the README Operational Guide).
 #
 # Install:
 #   sudo cp deploy/systemd/vpc-proof.service /etc/systemd/system/
@@ -20,19 +20,41 @@ Wants=network-online.target
 Type=simple
 User=vpc-proof
 Group=vpc-proof
-ExecStart=/usr/local/bin/vpc-proof server
+ExecStart=/usr/local/bin/vpc-proof serve
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=30
 # Environment file for configuration (token, rate limits, log level, ...)
 EnvironmentFile=-/etc/vpc-proof/vpc-proof.env
-# Security hardening
+# State and log directories owned by the service user; point report and
+# history outputs at /var/lib/vpc-proof.
+StateDirectory=vpc-proof
+RuntimeDirectory=vpc-proof
+
+# --- Security hardening ------------------------------------------------------
+# Make /usr, /boot, and /etc read-only; the agent writes to its state and
+# private temp directories only.
+ProtectSystem=full
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
 ProtectHome=true
-ReadOnlyPaths=/
-LimitNOFILE=65536
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+ProcSubset=pid
+PrivateDevices=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+# The agent requires no capabilities.
+CapabilityBoundingSet=
 
 [Install]
 WantedBy=multi-user.target

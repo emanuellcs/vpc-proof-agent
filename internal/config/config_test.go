@@ -46,6 +46,9 @@ func TestDefaults(t *testing.T) {
 	if c.Probes.DNSHost != "amazon.com" {
 		t.Errorf("Probes.DNSHost = %q, want %q", c.Probes.DNSHost, "amazon.com")
 	}
+	if c.Probes.IMDSBaseURL != "" {
+		t.Errorf("Probes.IMDSBaseURL = %q, want empty (default IMDS)", c.Probes.IMDSBaseURL)
+	}
 	if got := c.Probes.Timeout.Value(); got != 5*time.Second {
 		t.Errorf("Probes.Timeout = %s, want 5s", got)
 	}

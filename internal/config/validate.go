@@ -75,6 +75,9 @@ func validateProbes(p *ProbesConfig) []error {
 	if p.DNSHost == "" {
 		errs = append(errs, fmt.Errorf("probes.dns_host: must not be empty"))
 	}
+	if p.IMDSBaseURL != "" && !isHTTPURL(p.IMDSBaseURL) {
+		errs = append(errs, fmt.Errorf("probes.imds_base_url: invalid HTTP(S) URL %q", p.IMDSBaseURL))
+	}
 	if p.Timeout.NonPositive() {
 		errs = append(errs, fmt.Errorf("probes.timeout: must be a positive duration, got %s", p.Timeout.String()))
 	}

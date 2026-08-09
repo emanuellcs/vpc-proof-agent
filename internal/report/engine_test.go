@@ -235,7 +235,7 @@ func TestRenderMarkdownContent(t *testing.T) {
 
 	out := string(rendered)
 	for _, want := range []string{
-		"# VPC Proof Agent — Evidence Report",
+		"# VPC Proof Agent: Evidence Report",
 		"| Instance ID | i-0123456789abcdef0 |",
 		"| Overall status | warn |",
 		"## 4. Probe Results",
@@ -262,7 +262,7 @@ func TestRenderTextContent(t *testing.T) {
 
 	out := string(rendered)
 	for _, want := range []string{
-		"VPC PROOF AGENT — EVIDENCE REPORT",
+		"VPC PROOF AGENT: EVIDENCE REPORT",
 		"Instance ID         : i-0123456789abcdef0",
 		"subnet_ownership     fail",
 		"- [critical] Verify the EC2 instance was launched in the correct Subnet (10.0.1.0/24).",
@@ -338,7 +338,7 @@ func TestWrite(t *testing.T) {
 	if err := engine.Write(&buf, testData(), FormatMarkdown); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
-	if !strings.Contains(buf.String(), "VPC Proof Agent — Evidence Report") {
+	if !strings.Contains(buf.String(), "VPC Proof Agent: Evidence Report") {
 		t.Error("Write output missing title")
 	}
 }
@@ -366,7 +366,7 @@ func TestWriteFile(t *testing.T) {
 	if readErr != nil {
 		t.Fatalf("read: %v", readErr)
 	}
-	if !strings.Contains(string(content), "VPC Proof Agent — Evidence Report") {
+	if !strings.Contains(string(content), "VPC Proof Agent: Evidence Report") {
 		t.Error("file content missing title")
 	}
 

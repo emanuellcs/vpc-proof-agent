@@ -10,7 +10,7 @@ Thanks for your interest in contributing. This guide covers code style, testing,
 
 ## Code Style
 
-- Run `make fmt` before committing — the project uses **gofumpt** and **goimports**.
+- Run `make fmt` before committing; the project uses **gofumpt** and **goimports**.
 - Run `make lint` and keep the output clean (golangci-lint v2, configured in `.golangci.yml`).
 - Follow [Effective Go](https://go.dev/doc/effective_go) and idiomatic Go conventions.
 - **No comments unless they add real value** for readers/maintainers. Prefer self-documenting code; use doc comments on exported identifiers.
@@ -29,7 +29,7 @@ Thanks for your interest in contributing. This guide covers code style, testing,
 - Business logic lives in `internal/`; reusable low-level helpers live in `pkg/`.
 - Dependencies flow downward: `cmd` → `internal` → `pkg`. No upward or circular imports.
 - Keep AWS interactions isolated behind adapters in `pkg/`; `internal` modules stay SDK-agnostic.
-- Never introduce logic that provisions AWS resources — the agent only validates.
+- Never introduce logic that provisions AWS resources; the agent only validates.
 
 ## Commit Conventions
 

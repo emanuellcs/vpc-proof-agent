@@ -47,7 +47,7 @@ type App struct {
 func buildApp(cfg *config.Config, logger *observability.Logger, deps *appDeps) (*App, error) {
 	meta := deps.metadataClient
 	if meta == nil {
-		meta = metadata.New(metadata.Options{})
+		meta = metadata.New(metadata.Options{BaseURL: cfg.Probes.IMDSBaseURL})
 	}
 
 	resolver := deps.resolver

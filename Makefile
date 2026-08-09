@@ -1,5 +1,5 @@
 # =============================================================
-# vpc-proof-agent — Makefile
+# vpc-proof-agent: Makefile
 # Build, test, lint, format, run, and LocalStack automation.
 # =============================================================
 
@@ -49,6 +49,10 @@ install: ## Install the binary to GOBIN (with version ldflags)
 .PHONY: test
 test: ## Run all tests with the race detector
 	$(GO) test -race -count=1 ./...
+
+.PHONY: e2e
+e2e: ## Run end-to-end tests against the compiled binary
+	$(GO) test -tags e2e -count=1 -v ./test/e2e/
 
 .PHONY: vet
 vet: ## Run go vet

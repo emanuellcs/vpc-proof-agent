@@ -190,7 +190,7 @@ func TestReportToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read report file: %v", err)
 	}
-	if !strings.Contains(string(content), "VPC Proof Agent — Evidence Report") {
+	if !strings.Contains(string(content), "VPC Proof Agent: Evidence Report") {
 		t.Errorf("report file missing title, got:\n%s", content)
 	}
 	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o644 {

@@ -106,6 +106,7 @@ func TestLoadEnvOverrides(t *testing.T) {
 	t.Setenv("VPC_PROOF_LOG_LEVEL", "warn")
 	t.Setenv("VPC_PROOF_PROBES_VPC_CIDR", "172.16.0.0/12")
 	t.Setenv("VPC_PROOF_PROBES_DNS_HOST", "aws.amazon.com")
+	t.Setenv("VPC_PROOF_PROBES_IMDS_BASE_URL", "http://127.0.0.1:4566")
 	t.Setenv("VPC_PROOF_PROBES_ECHO_URLS", "https://api.ipify.org, https://checkip.amazonaws.com")
 	t.Setenv("VPC_PROOF_SERVER_READ_TIMEOUT", "2s")
 	t.Setenv("VPC_PROOF_SERVER_SHUTDOWN_TIMEOUT", "20s")
@@ -128,6 +129,9 @@ func TestLoadEnvOverrides(t *testing.T) {
 	}
 	if cfg.Probes.DNSHost != "aws.amazon.com" {
 		t.Errorf("Probes.DNSHost = %q, want aws.amazon.com", cfg.Probes.DNSHost)
+	}
+	if cfg.Probes.IMDSBaseURL != "http://127.0.0.1:4566" {
+		t.Errorf("Probes.IMDSBaseURL = %q", cfg.Probes.IMDSBaseURL)
 	}
 	if len(cfg.Probes.EchoURLs) != 2 {
 		t.Fatalf("Probes.EchoURLs = %v, want 2 entries", cfg.Probes.EchoURLs)

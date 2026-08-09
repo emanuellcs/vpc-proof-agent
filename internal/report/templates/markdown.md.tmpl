@@ -1,4 +1,4 @@
-# VPC Proof Agent — Evidence Report
+# VPC Proof Agent: Evidence Report
 
 | Field | Value |
 | --- | --- |

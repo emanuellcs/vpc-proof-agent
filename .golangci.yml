@@ -1,5 +1,5 @@
 # =============================================================
-# vpc-proof-agent — golangci-lint configuration
+# vpc-proof-agent: golangci-lint configuration
 # Schema: golangci-lint v2 (see https://golangci-lint.run/usage/configuration/)
 # =============================================================
 

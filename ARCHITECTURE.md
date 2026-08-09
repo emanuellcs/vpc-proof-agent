@@ -1,4 +1,4 @@
-# VPC Proof Agent — Architecture
+# VPC Proof Agent: Architecture
 
 This document describes the architectural approach, module responsibilities, and data flow of the VPC Proof Agent.
 
@@ -6,10 +6,10 @@ This document describes the architectural approach, module responsibilities, and
 
 The project follows **Clean Architecture** principles applied to the standard Go project layout:
 
-1. **Separation of concerns** — each package owns a single, well-defined responsibility.
-2. **Dependency direction** — `cmd` depends on `internal`; `internal` depends on `pkg` and the standard library. There are no upward dependencies, and no circular imports.
-3. **Interface-driven boundaries** — the CLI, API, and probe engines communicate through small, explicit interfaces so implementations can be swapped and unit-tested in isolation.
-4. **Portability** — the core logic (probe, diagnostic, report, security) is pure Go and free of AWS SDK coupling at the domain level; AWS interactions are isolated behind the `pkg/metadata` and `pkg/netutil` adapters.
+1. **Separation of concerns**: each package owns a single, well-defined responsibility.
+2. **Dependency direction**: `cmd` depends on `internal`; `internal` depends on `pkg` and the standard library. There are no upward dependencies, and no circular imports.
+3. **Interface-driven boundaries**: the CLI, API, and probe engines communicate through small, explicit interfaces so implementations can be swapped and unit-tested in isolation.
+4. **Portability**: the core logic (probe, diagnostic, report, security) is pure Go and free of AWS SDK coupling at the domain level; AWS interactions are isolated behind the `pkg/metadata` and `pkg/netutil` adapters.
 
 ## Layers
 
@@ -40,7 +40,7 @@ The project follows **Clean Architecture** principles applied to the standard Go
 └──────────────────────────────┘   └──────────────────────────────┘
 ```
 
-Cross-cutting concerns — applied everywhere:
+Cross-cutting concerns, applied everywhere:
 
 ```
 internal/security        auth, rate limiting, token management

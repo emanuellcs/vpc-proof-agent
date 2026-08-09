@@ -33,6 +33,8 @@ func TestValidate(t *testing.T) {
 		{name: "echo urls empty", mutate: func(c *Config) { c.Probes.EchoURLs = nil }, want: "probes.echo_urls"},
 		{name: "echo url invalid", mutate: func(c *Config) { c.Probes.EchoURLs = []string{"not a url"} }, want: "probes.echo_urls"},
 		{name: "dns host empty", mutate: func(c *Config) { c.Probes.DNSHost = "" }, want: "probes.dns_host"},
+		{name: "imds base url invalid", mutate: func(c *Config) { c.Probes.IMDSBaseURL = "not-a-url" }, want: "probes.imds_base_url"},
+		{name: "imds base url valid", mutate: func(c *Config) { c.Probes.IMDSBaseURL = "http://127.0.0.1:4566" }, want: ""},
 		{name: "probe timeout zero", mutate: func(c *Config) { c.Probes.Timeout = 0 }, want: "probes.timeout"},
 		{name: "max retries negative", mutate: func(c *Config) { c.Probes.MaxRetries = -1 }, want: "probes.max_retries"},
 		{name: "cache ttl zero", mutate: func(c *Config) { c.Cache.ProbeTTL = 0 }, want: "cache.probe_ttl"},

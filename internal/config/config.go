@@ -124,6 +124,10 @@ type ProbesConfig struct {
 	// DNSHost is the hostname resolved to verify DNS works, for example
 	// "amazon.com".
 	DNSHost string `yaml:"dns_host" json:"dns_host"`
+	// IMDSBaseURL overrides the EC2 instance metadata endpoint. When empty,
+	// the default link-local address (http://169.254.169.254) is used.
+	// Useful for testing against a mock IMDS or for IMDS proxies.
+	IMDSBaseURL string `yaml:"imds_base_url" json:"imds_base_url"`
 	// Timeout bounds each individual probe.
 	Timeout Duration `yaml:"timeout" json:"timeout"`
 	// MaxRetries is the number of retries for transient probe failures.

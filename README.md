@@ -1,13 +1,16 @@
 # VPC Proof Agent
 
+> [!NOTE]
+> **Avaliador do Capacita iRede:** Este projeto foi desenvolvido como ferramenta de validação técnica para a atividade final do módulo intermediário da trilha de Provimento de Serviços Computacionais (PSC). Para o relatório acadêmico detalhado, que mapeia cada recurso da AWS às evidências geradas por esta aplicação, por favor acesse o arquivo [`README_pt-BR.md`](./README_pt-BR.md).
+
 A comprehensive **diagnostic and evidence-gathering tool** written in Go that technically validates and proves that a manually provisioned AWS networking environment is functioning correctly.
 
 The agent runs on an Amazon EC2 instance (Amazon Linux 2) and validates a target environment that consists of a VPC (`10.0.0.0/16`), a public subnet (`10.0.1.0/24` with auto-assign public IP), an Internet Gateway, a Route Table with a default route to the IGW, a Security Group, and an EC2 instance (`t2.micro`).
 
 > **The agent does NOT provision AWS resources.** It assumes the environment exists and validates it, producing reproducible evidence.
 
-- **CLI** — administration, deep diagnostics, and report generation, used locally over SSH.
-- **REST API (v1)** — publicly exposed to prove internet reachability, external routing, and Security Group configuration.
+- **CLI**: administration, deep diagnostics, and report generation, used locally over SSH.
+- **REST API (v1)**: publicly exposed to prove internet reachability, external routing, and Security Group configuration.
 
 ---
 
@@ -19,11 +22,17 @@ The agent runs on an Amazon EC2 instance (Amazon Linux 2) and validates a target
 - [Architecture](#architecture)
 - [Repository Layout](#repository-layout)
 - [Requirements](#requirements)
+- [Quickstart](#quickstart)
 - [Getting Started](#getting-started)
   - [1. Start LocalStack](#1-start-localstack)
   - [2. Provision the Lab](#2-provision-the-lab)
   - [3. Build and Test](#3-build-and-test)
 - [Tooling](#tooling)
+- [Configuration](#configuration)
+- [CLI Commands](#cli-commands)
+- [Reports & Exit Codes](#reports--exit-codes)
+- [REST API](#rest-api)
+- [Operational Guide](#operational-guide)
 - [Security](#security)
 - [Documentation](#documentation)
 - [License](#license)
@@ -46,19 +55,17 @@ Read more in [ARCHITECTURE.md](./ARCHITECTURE.md). A Portuguese version of this 
 | --- | --- |
 | Metadata | Secure EC2 metadata extraction using IMDSv2 (Instance ID, Private/Public IP, AZ) |
 | Network probes | IP ownership (VPC/Subnet CIDR matching), default-route/gateway detection, DNS resolution, outbound HTTPS connectivity |
+| System probes | Host resource inspection (`/proc` uptime/load/memory) and clock-skew detection against an NTP reference |
 | Consistency | Cross-check of AWS-reported public IP against an external echo service |
-| Diagnostics | Probe failures translated into actionable AWS troubleshooting hints |
-| Reporting | Evidence reports in JSON, Markdown, and plain text |
-| REST API | Versioned `v1` API: health, readiness, info, network details, active probing, external request echo, Prometheus metrics |
-| Security | Token-based API authentication, strict rate limiting, caching of heavy probes, zero exposure of credentials |
+| Diagnostics | Probe failures translated into actionable AWS troubleshooting hints by a rule-based engine |
+| Reporting | Evidence reports in JSON, Markdown, and plain text, each with a SHA-256 integrity hash |
+| REST API | Versioned `v1` API: health, readiness, info, status, network, probe, report, echo, history, config, OpenAPI, Prometheus metrics |
+| History | Capped, thread-safe tracking of probe runs over time, with optional atomic disk persistence |
+| Security | Token-based API authentication, per-IP rate limiting, TLS support, zero exposure of credentials |
 | Observability | Structured logging (JSON/Text), request IDs, Prometheus-compatible metrics |
-| Operations | systemd service definition, graceful shutdown, config via flags/env/files |
+| Operations | Hardened systemd unit, graceful shutdown, config via flags/env/files |
 
-> Status: the repository is currently at **Commit 6**. The configuration
-> system, structured logging, the full CLI, the probe engine (including system
-> resources and clock-skew probes), the diagnostic rule matrix, the report
-> engine with integrity hashing, history tracking, optional TLS, and the public
-> REST API are all implemented.
+> **Version:** `v1.0.0`. The full capability set described in this document is implemented and covered by unit, integration, and end-to-end tests.
 
 ## Target AWS Environment
 
@@ -83,7 +90,32 @@ internal/  application modules     (business logic)
 pkg/       shared, reusable libs   (CIDR math, IMDSv2 client, net utils)
 deploy/    systemd units & scripts
 scripts/   automation (LocalStack provisioning)
+test/e2e/  end-to-end tests        (compiled binary, mocked IMDS/echo)
 docs/      extended documentation
+```
+
+### Data flow
+
+```mermaid
+flowchart TD
+    CLI["CLI commands<br/>status / check / diagnose / report / serve"]
+    API["REST API v1<br/>handlers + middleware"]
+    APP["App Container<br/>config, logger, runner, diagnostics, history"]
+    PE["Probe Engine<br/>9 probes"]
+    DIAG["Diagnostic Engine<br/>rules -> hints"]
+    REPO["Report Engine<br/>JSON / Markdown / Text + integrity hash"]
+    CACHE["Probe Cache<br/>TTL + history"]
+
+    CLI --> APP
+    API --> APP
+    APP --> PE
+    PE --> IMDS["EC2 Metadata<br/>(IMDSv2)"]
+    PE --> OS["OS<br/>(routes, /proc)"]
+    PE --> NET["Internet<br/>(echo, DNS, HTTPS)"]
+    PE --> CACHE
+    CACHE --> DIAG
+    DIAG --> REPO
+    REPO -->|evidence| OUT["Reports / API responses"]
 ```
 
 Internal modules and their responsibilities are described in detail in [ARCHITECTURE.md](./ARCHITECTURE.md).
@@ -120,6 +152,26 @@ Internal modules and their responsibilities are described in detail in [ARCHITEC
 - GNU Make
 - [golangci-lint](https://golangci-lint.run/) **v2.x** (for `make lint`)
 
+## Quickstart
+
+Build the binary and run the full diagnostic cycle:
+
+```bash
+make build                        # builds bin/vpc-proof
+./bin/vpc-proof status            # quick instance summary
+./bin/vpc-proof check             # full probe suite (exit code = CI gateway)
+./bin/vpc-proof report --format markdown --output evidence.md
+./bin/vpc-proof serve             # start the public REST API
+```
+
+Configuration is resolved from flags, `VPC_PROOF_*` environment variables, a
+YAML file, and defaults (in that precedence order). See
+[Configuration](#configuration) and [config.example.yaml](./config.example.yaml).
+
+On an EC2 instance, copy `config.example.yaml` to `vpc-proof.yaml`, set the
+expected CIDRs and the API token, and run `vpc-proof serve` under systemd (see
+[Operational Guide](#operational-guide)).
+
 ## Getting Started
 
 ### 1. Start LocalStack
@@ -144,7 +196,7 @@ To clean up afterwards:
 make localstack-teardown
 ```
 
-> **Safety:** both scripts force LocalStack-only credentials and endpoints, so they can never touch a real AWS account — even if real credentials exist on the machine.
+> **Safety:** both scripts force LocalStack-only credentials and endpoints, so they can never touch a real AWS account, even if real credentials exist on the machine.
 
 ### 3. Build and Test
 
@@ -152,6 +204,7 @@ make localstack-teardown
 make build          # builds bin/vpc-proof
 make test           # go test -race ./...
 make lint           # golangci-lint run
+make e2e            # end-to-end tests against the compiled binary
 make fmt            # gofumpt + goimports formatting
 make run            # runs the scaffold binary
 ```
@@ -167,6 +220,7 @@ make run            # runs the scaffold binary
 | `make vet` | Run `go vet` |
 | `make fmt` | Format code (gofumpt + goimports) |
 | `make lint` | Run golangci-lint |
+| `make e2e` | Run end-to-end tests (compiled binary + mock servers) |
 | `make tidy` | Tidy modules |
 | `make tools` | Install development tools (mockgen) |
 | `make mocks` | Generate mocks (`go generate ./...`) |
@@ -182,10 +236,10 @@ make run            # runs the scaffold binary
 The agent is configured through up to four sources, applied in precedence
 order (highest first):
 
-1. **Command-line flags** — `--config`, `--log-level`, `--log-format`.
-2. **Environment variables** — prefixed with `VPC_PROOF_` (see
+1. **Command-line flags**: `--config`, `--log-level`, `--log-format`.
+2. **Environment variables**: prefixed with `VPC_PROOF_` (see
    [.env.example](./.env.example)).
-3. **A YAML config file** — passed via `--config`, the `VPC_PROOF_CONFIG`
+3. **A YAML config file**: passed via `--config`, the `VPC_PROOF_CONFIG`
    environment variable, or discovered at `./vpc-proof.yaml`,
    `$XDG_CONFIG_HOME/vpc-proof/config.yaml`, and
    `/etc/vpc-proof/config.yaml`. See [config.example.yaml](./config.example.yaml).
@@ -288,6 +342,10 @@ Heavy probe endpoints are cached for `cache.probe_ttl`; send
 Every response carries an `X-Request-ID`, and errors are returned as JSON with
 the request ID and timestamp.
 
+The complete, machine-readable schema of the API, including every endpoint, parameter,
+and response, is served by the agent itself at `GET /api/v1/openapi.json`
+and can be loaded directly into Swagger UI or Postman.
+
 ### Optional TLS
 
 Set `server.tls_cert_file` and `server.tls_key_file` (both must be provided)
@@ -312,6 +370,56 @@ verify the report has not been tampered with.
 - The `/api/v1/echo` endpoint honors `X-Forwarded-For`/`X-Real-IP` before
   falling back to the direct connection address.
 
+## Operational Guide
+
+### Running as a systemd service
+
+On Amazon Linux 2:
+
+```bash
+sudo cp bin/vpc-proof /usr/local/bin/vpc-proof
+sudo useradd --system --home-dir /var/lib/vpc-proof --create-home vpc-proof
+sudo mkdir -p /etc/vpc-proof
+sudo cp config.example.yaml /etc/vpc-proof/vpc-proof.yaml
+sudo cp deploy/systemd/vpc-proof.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now vpc-proof
+journalctl -u vpc-proof -f
+```
+
+The unit runs with hardened settings (`ProtectSystem=full`,
+`NoNewPrivileges=true`, `PrivateTmp=true`, restricted capabilities and
+namespaces) and uses `StateDirectory=vpc-proof`, so report and history outputs
+should be written under `/var/lib/vpc-proof`.
+
+### Enabling TLS
+
+Generate a certificate and configure the server:
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/vpc-proof/key.pem -out /etc/vpc-proof/cert.pem \
+  -subj "/CN=<public-ip-or-hostname>"
+```
+
+Then set `server.tls_cert_file` and `server.tls_key_file` in the configuration
+(both must be provided) and restart the service; `vpc-proof serve` will listen
+over HTTPS.
+
+### Interpreting exit codes in CI/CD
+
+`vpc-proof check` is designed to gate pipelines:
+
+```bash
+./bin/vpc-proof check && echo "environment healthy" || echo "gate exited $?"
+```
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Overall status is **pass** or **skip** |
+| `1` | At least one probe **failed** |
+| `2` | No failures, but at least one probe **warned** |
+
 ## Security
 
 - The agent **never** provisions resources and **never** reads or exposes AWS credentials.
@@ -321,10 +429,11 @@ verify the report has not been tampered with.
 
 ## Documentation
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — Clean Architecture, module responsibilities, data flow.
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — code style, testing, commit conventions.
-- [README_pt-BR.md](./README_pt-BR.md) — Portuguese, tailored for academic evaluators.
-- [docs/](./docs/) — extended documentation index.
+- [ARCHITECTURE.md](./ARCHITECTURE.md): Clean Architecture, module responsibilities, data flow.
+- [CONTRIBUTING.md](./CONTRIBUTING.md): code style, testing, commit conventions.
+- [README_pt-BR.md](./README_pt-BR.md): Portuguese, including the academic report mapping AWS resources to evidence.
+- [CHANGELOG.md](./CHANGELOG.md): release history.
+- [docs/](./docs/): extended documentation index.
 
 ## License
 

@@ -104,6 +104,7 @@ func applyEnv(cfg *Config) error {
 		{name: envPrefix + "PROBES_SUBNET_CIDR", apply: setStr(&cfg.Probes.SubnetCIDR)},
 		{name: envPrefix + "PROBES_ECHO_URLS", apply: setStrSlice(&cfg.Probes.EchoURLs)},
 		{name: envPrefix + "PROBES_DNS_HOST", apply: setStr(&cfg.Probes.DNSHost)},
+		{name: envPrefix + "PROBES_IMDS_BASE_URL", apply: setStr(&cfg.Probes.IMDSBaseURL)},
 		{name: envPrefix + "PROBES_TIMEOUT", apply: setDuration(&cfg.Probes.Timeout)},
 		{name: envPrefix + "PROBES_MAX_RETRIES", apply: setInt(&cfg.Probes.MaxRetries)},
 		{name: envPrefix + "CACHE_PROBE_TTL", apply: setDuration(&cfg.Cache.ProbeTTL)},
