@@ -51,6 +51,8 @@ type AgentInfo struct {
 	GoVersion string `json:"go_version"`
 	// Platform is GOOS/GOARCH.
 	Platform string `json:"platform"`
+	// Developer is the developer attribution.
+	Developer string `json:"developer,omitempty"`
 }
 
 // Instance holds the EC2 instance metadata gathered by the probes.

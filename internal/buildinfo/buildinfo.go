@@ -14,3 +14,7 @@ var Commit = "none"
 
 // BuildDate is the UTC timestamp of the build. Overridden at build time.
 var BuildDate = "unknown"
+
+// Developer is the developer attribution shown by the CLI and reports.
+// Overridden at build time; defaults to the project's primary developer.
+var Developer = "Emanuel Lázaro (emanuellcs)"

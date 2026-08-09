@@ -4,6 +4,7 @@
  Overall status      : {{ .Summary.Status }}
  Generated at        : {{ .GeneratedAt.Format "2006-01-02 15:04:05 MST" }}
  Agent               : {{ .Agent.Name }} {{ .Agent.Version }} (commit {{ .Agent.Commit }})
+ Developer           : {{ or .Agent.Developer "N/A" }}
  Go runtime          : {{ .Agent.GoVersion }}
  Platform            : {{ .Agent.Platform }}
  Integrity Hash      : {{ .IntegrityHash }}

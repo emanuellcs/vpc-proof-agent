@@ -293,7 +293,8 @@
           "commit": { "type": "string" },
           "build_date": { "type": "string" },
           "go_version": { "type": "string" },
-          "platform": { "type": "string" }
+          "platform": { "type": "string" },
+          "developer": { "type": "string" }
         }
       },
       "Instance": {

@@ -94,4 +94,7 @@ func TestAgentInfoFromRuntime(t *testing.T) {
 	if agent.Version == "" || agent.GoVersion == "" || agent.Platform == "" {
 		t.Errorf("runtime info incomplete: %+v", agent)
 	}
+	if agent.Developer == "" {
+		t.Error("Developer should be populated by AgentInfoFromRuntime")
+	}
 }

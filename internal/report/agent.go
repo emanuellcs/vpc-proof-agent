@@ -19,5 +19,6 @@ func AgentInfoFromRuntime() AgentInfo {
 		BuildDate: buildinfo.BuildDate,
 		GoVersion: runtime.Version(),
 		Platform:  runtime.GOOS + "/" + runtime.GOARCH,
+		Developer: buildinfo.Developer,
 	}
 }
