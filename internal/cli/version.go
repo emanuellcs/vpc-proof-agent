@@ -28,6 +28,7 @@ and target platform of the vpc-proof binary.`,
 			cmd.Printf("  version:    %s\n", buildinfo.Version)
 			cmd.Printf("  commit:     %s\n", buildinfo.Commit)
 			cmd.Printf("  build date: %s\n", buildinfo.BuildDate)
+			cmd.Printf("  developer:  %s\n", buildinfo.Developer)
 			cmd.Printf("  go version: %s\n", runtime.Version())
 			cmd.Printf("  platform:   %s/%s\n", runtime.GOOS, runtime.GOARCH)
 			return nil

@@ -5,9 +5,10 @@
 | Overall status | warn |
 | Generated at | 2026-08-08 12:00:00 UTC |
 | Agent | vpc-proof 1.2.3 (commit abc1234, built 2026-08-08T12:00:00Z) |
+| Developer | Emanuel Lázaro (emanuellcs) |
 | Go runtime | go1.26.5 |
 | Platform | linux/amd64 |
-| Integrity hash | `0dd56e5ea56bed649bb3ded9a35c243ed301a65da0171c2ab69c2b2927b66e54` |
+| Integrity hash | `6448c244bce299b34b6321e9c2bc93f7effe29d7c10d66395e15a8002d3af0c0` |
 
 ## 1. Instance
 

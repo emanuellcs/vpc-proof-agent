@@ -75,6 +75,9 @@ func TestInfoEndpoint(t *testing.T) {
 	if agent["version"] == "" || agent["go_version"] == "" {
 		t.Errorf("agent info incomplete: %v", agent)
 	}
+	if agent["developer"] == "" {
+		t.Errorf("agent info missing developer attribution: %v", agent)
+	}
 
 	var instance map[string]any
 	if err := json.Unmarshal(body["instance"], &instance); err != nil {

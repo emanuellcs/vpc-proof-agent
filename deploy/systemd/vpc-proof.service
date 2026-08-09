@@ -44,8 +44,11 @@ ProtectKernelLogs=true
 ProtectControlGroups=true
 ProtectClock=true
 ProtectHostname=true
+# ProtectProc=invisible hides other processes' /proc/<pid> directories.
+# ProcSubset=pid is intentionally NOT used: the agent's default-route and
+# system-resources probes must read host-wide /proc files (/proc/net/route,
+# /proc/uptime, /proc/loadavg, /proc/meminfo), which ProcSubset=pid hides.
 ProtectProc=invisible
-ProcSubset=pid
 PrivateDevices=true
 RestrictSUIDSGID=true
 RestrictRealtime=true

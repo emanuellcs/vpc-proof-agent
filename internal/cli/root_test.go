@@ -48,6 +48,7 @@ func TestVersionCommand(t *testing.T) {
 	}
 	for _, want := range []string{
 		"version:",
+		"developer:",
 		"go version: " + runtime.Version(),
 		runtime.GOOS + "/" + runtime.GOARCH,
 	} {

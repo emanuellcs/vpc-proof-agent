@@ -21,7 +21,8 @@ BUILDINFO_PKG := github.com/emanuellcs/vpc-proof-agent/internal/buildinfo
 LDFLAGS := -s -w \
 	-X $(BUILDINFO_PKG).Version=$(VERSION) \
 	-X $(BUILDINFO_PKG).Commit=$(COMMIT) \
-	-X $(BUILDINFO_PKG).BuildDate=$(BUILD_DATE)
+	-X $(BUILDINFO_PKG).BuildDate=$(BUILD_DATE) \
+	-X '$(BUILDINFO_PKG).Developer=Emanuel Lázaro (emanuellcs)'
 
 # --- Default target ---------------------------------------------------------
 
@@ -37,7 +38,7 @@ build: ## Build the binary into bin/vpc-proof (with version ldflags)
 	$(GO) build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/vpc-proof
 
 .PHONY: run
-run: ## Run the scaffold binary
+run: ## Run the vpc-proof binary
 	$(GO) run ./cmd/vpc-proof
 
 .PHONY: install

@@ -28,6 +28,7 @@ func testData() *Data {
 			BuildDate: "2026-08-08T12:00:00Z",
 			GoVersion: "go1.26.5",
 			Platform:  "linux/amd64",
+			Developer: "Emanuel Lázaro (emanuellcs)",
 		},
 		Instance: Instance{
 			InstanceID:       "i-0123456789abcdef0",

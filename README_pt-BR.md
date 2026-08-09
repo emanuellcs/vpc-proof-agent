@@ -1,5 +1,7 @@
 # VPC Proof Agent
 
+[![Go Version](https://img.shields.io/badge/Go-1.26-blue.svg)](https://go.dev) [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![CI](https://github.com/emanuellcs/vpc-proof-agent/workflows/CI/badge.svg)](https://github.com/emanuellcs/vpc-proof-agent/actions)
+
 Um **agente de diagnóstico e coleta de evidências** escrito em Go, que valida e comprova, tecnicamente, que um ambiente de rede AWS provisionado manualmente está funcionando corretamente.
 
 O agente executa em uma instância EC2 (Amazon Linux 2) e valida um ambiente-alvo composto por uma VPC (`10.0.0.0/16`), uma sub-rede pública (`10.0.1.0/24` com atribuição automática de IP público), um Internet Gateway, uma tabela de rotas com rota padrão para o IGW, um Security Group e uma instância EC2 (`t2.micro`).
@@ -17,6 +19,7 @@ O agente executa em uma instância EC2 (Amazon Linux 2) e valida um ambiente-alv
 - [Como o agente valida o laboratório](#como-o-agente-valida-o-laboratório)
 - [Visão técnica](#visão-técnica)
 - [Como executar localmente](#como-executar-localmente)
+- [API REST](#api-rest)
 - [Segurança](#segurança)
 - [Documentação](#documentação)
 
@@ -43,10 +46,22 @@ A tabela a seguir associa cada recurso do laboratório à sonda que o valida e a
 | VPC `10.0.0.0/16` | `vpc_ownership` | O IP privado da instância pertence ao CIDR da VPC |
 | Sub-rede Pública `10.0.1.0/24` | `subnet_ownership` + `public_ip_consistency` | O IP privado pertence ao CIDR da sub-rede e há IP público atribuído |
 | Internet Gateway (IGW) | `internet_https` | O tráfego HTTPS de saída consegue deixar a VPC |
-| Tabela de Rotas `0.0.0.0/0 → IGW` | `default_route` + `internet_https` | Existe rota padrão ativa no sistema operacional e o roteamento funciona na rede AWS |
+| Tabela de Rotas `0.0.0.0/0 -> IGW` | `default_route` + `internet_https` | Existe rota padrão ativa no sistema operacional e o roteamento funciona na rede AWS |
 | Security Group (SSH/22 e HTTP/8080) | Acesso SSH (CLI) + HTTP externo ao `/api/v1/echo` | A porta 22 aceita acesso administrativo e a porta 8080 recebe requisições externas |
 | Instância EC2 `t2.micro` | `metadata` (IMDSv2) + `system_resources` | A instância responde ao IMDSv2 e apresenta recursos de sistema saudáveis |
-| Acessibilidade pela internet | `public_ip_consistency` + `echo` | O IP público reportado pela AWS coincide com o IP observado externamente |
+| Acessibilidade pela internet | `public_ip_consistency` + `GET /api/v1/echo` | O IP público reportado pela AWS coincide com o IP observado externamente |
+
+```mermaid
+flowchart LR
+    VPC["VPC 10.0.0.0/16"] --> OWN["sonda vpc_ownership"]
+    SUBNET["Sub-rede 10.0.1.0/24"] --> SO["sonda subnet_ownership"]
+    IGW["Internet Gateway"] --> HTTPS["sonda internet_https"]
+    RTB["Tabela de rotas 0.0.0.0/0"] --> DR["sonda default_route"]
+    EC2["Instância EC2"] --> META["sonda metadata"]
+    EC2 --> SYS["sonda system_resources"]
+    PUB["IP público"] --> PIC["sonda public_ip_consistency"]
+    PUB --> ECHO["endpoint GET /api/v1/echo"]
+```
 
 #### 3.1 VPC (10.0.0.0/16): sonda `vpc_ownership`
 
@@ -60,7 +75,7 @@ A sonda `subnet_ownership` confirma que o IP privado está dentro de `10.0.1.0/2
 
 A sonda `internet_https` realiza uma requisição HTTPS para um serviço externo (ex.: `https://checkip.amazonaws.com`). O sucesso dessa requisição prova, de forma conclusiva e indireta, que o Internet Gateway está anexado à VPC e que o tráfego de saída consegue alcançar a internet.
 
-#### 3.4 Tabela de Rotas (0.0.0.0/0 → IGW): sondas `default_route` e `internet_https`
+#### 3.4 Tabela de Rotas (0.0.0.0/0 -> IGW): sondas `default_route` e `internet_https`
 
 A sonda `default_route` lê a tabela de rotas do sistema operacional (`/proc/net/route`) e confirma a existência de uma rota padrão ativa com gateway. Combinada com o sucesso da sonda `internet_https`, ela comprova a cadeia completa: a rota `0.0.0.0/0` aponta para o IGW e está associada à sub-rede.
 
@@ -74,7 +89,7 @@ A sonda `metadata` acessa o serviço de metadados da instância via **IMDSv2** (
 
 #### 3.7 Acessibilidade pela internet
 
-A combinação das sondas `public_ip_consistency` e `echo` comprova que a instância possui um endereço IP público válido e que esse endereço é alcançável pela internet, fechando o ciclo de validação do laboratório.
+A combinação da sonda `public_ip_consistency` (que compara o IP público do IMDS com o IP observado pelo serviço de eco externo) e do endpoint público `GET /api/v1/echo` (que reflete o endereço IP de quem o acessa) comprova que a instância possui um endereço IP público válido e que esse endereço é alcançável pela internet, fechando o ciclo de validação do laboratório.
 
 ### 4. Evidências e Interpretação
 
@@ -107,11 +122,11 @@ O objetivo central é comprovar, com evidências técnicas, que o ambiente de re
 O agente funciona por duas interfaces complementares:
 
 - **CLI**: utilizada por um avaliador/administrador via SSH para diagnósticos profundos e geração de relatórios.
-- **REST API**: exposta publicamente (porta 8080) para provar que a instância é alcançável pela internet, que o roteamento externo funciona e que o Security Group está liberando o tráfego corretamente. Inclui endpoints de saúde, informações, sondas, relatório, histórico, configuração e especificação OpenAPI.
+- **REST API**: exposta publicamente (porta 8080) para provar que a instância é alcançável pela internet, que o roteamento externo funciona e que o Security Group está liberando o tráfego corretamente.
 
 ## Visão técnica
 
-- **Linguagem:** Go 1.26
+- **Linguagem:** Go 1.26.
 - **Arquitetura:** Clean Architecture com o layout padrão de projetos Go (`cmd/`, `internal/`, `pkg/`).
 - **Mock local da AWS:** LocalStack (acessado via CLI `lstk` ou `aws` com endpoints customizados).
 - **Provisionamento do laboratório:** script idempotente em `scripts/setup-localstack.sh`, que cria VPC, sub-rede, IGW, tabela de rotas e Security Group dentro do LocalStack usando a AWS CLI.
@@ -146,6 +161,25 @@ Para remover o laboratório provisionado:
 ```bash
 make localstack-teardown
 ```
+
+## API REST
+
+A API REST v1 é exposta publicamente na porta 8080 e inclui os seguintes endpoints:
+
+| Endpoint | Descrição |
+| --- | --- |
+| `GET /healthz` | Verificação de disponibilidade (liveness) |
+| `GET /readyz` | Verificação de prontidão |
+| `GET /api/v1/info` | Informações de build e metadados da instância |
+| `GET /api/v1/status` | Status agregado das sondas |
+| `GET /api/v1/network` | Resumo de rede (gateway, interface, DNS) |
+| `GET /api/v1/probe` | Relatório completo das sondas (com cache) |
+| `GET /api/v1/report` | Relatório de evidências em JSON, Markdown ou texto |
+| `GET /api/v1/echo` | Reflete o IP de quem acessa, provando alcançabilidade externa |
+| `GET /api/v1/history` | Histórico de execuções das sondas |
+| `GET /api/v1/config` | Configuração carregada, com token sensível mascarado |
+| `GET /api/v1/openapi.json` | Especificação OpenAPI 3.0 da API |
+| `GET /metrics` | Métricas no formato Prometheus |
 
 ## Segurança
 
