@@ -1,6 +1,6 @@
 # Deployment
 
-The VPC Proof Agent runs on an Amazon EC2 instance (Amazon Linux 2 or Amazon Linux 2023) as a hardened systemd service.
+The VPC Proof Agent runs on an Amazon EC2 instance (Amazon Linux 2023) as a hardened systemd service.
 
 ## Layout
 
@@ -69,7 +69,7 @@ docker run -d --name vpc-proof-sysd --privileged --cgroupns=host \
 
 Notes for the containerized environment:
 
-- Amazon Linux 2023 is recommended over Amazon Linux 2 for local testing because AL2 ships systemd 219, which does not initialize on cgroup-v2 hosts.
+- Amazon Linux 2023 is the supported platform: Amazon Linux 2 has been discontinued by Amazon and is not used (among other reasons, AL2 ships systemd 219, which does not initialize on cgroup-v2 hosts).
 - The base Docker images are minimal, so install systemd first (`dnf install -y systemd`).
 - Mask `systemd-networkd-wait-online.service` inside the container; it never completes in Docker and blocks the unit's `network-online.target` ordering.
 - Verify the lifecycle end to end: enable/start, `journalctl`, restart-on-failure, graceful stop, and the hardening values exposed by `systemctl show -p <directive>`.

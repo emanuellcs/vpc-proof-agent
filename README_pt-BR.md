@@ -4,7 +4,10 @@
 
 Um **agente de diagnóstico e coleta de evidências** escrito em Go, que valida e comprova, tecnicamente, que um ambiente de rede AWS provisionado manualmente está funcionando corretamente.
 
-O agente executa em uma instância EC2 (Amazon Linux 2) e valida um ambiente-alvo composto por uma VPC (`10.0.0.0/16`), uma sub-rede pública (`10.0.1.0/24` com atribuição automática de IP público), um Internet Gateway, uma tabela de rotas com rota padrão para o IGW, um Security Group e uma instância EC2 (`t2.micro`).
+O agente executa em uma instância EC2 (Amazon Linux 2023) e valida um ambiente-alvo composto por uma VPC (`10.0.0.0/16`), uma sub-rede pública (`10.0.1.0/24` com atribuição automática de IP público), um Internet Gateway, uma tabela de rotas com rota padrão para o IGW, um Security Group e uma instância EC2 (`t2.micro`).
+
+> [!NOTE]
+> **Versão do sistema operacional:** o laboratório do Capacita iRede solicitou originalmente o **Amazon Linux 2**. Como a Amazon o descontinuou, este projeto executa e é verificado no **Amazon Linux 2023**, plataforma documentada em todo este repositório.
 
 > **O agente NÃO provisiona recursos AWS.** Ele parte do princípio de que o ambiente existe e o valida, gerando evidências reproduzíveis.
 

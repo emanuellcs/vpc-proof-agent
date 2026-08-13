@@ -1,7 +1,7 @@
 # =============================================================
 # vpc-proof-agent: systemd unit
 #
-# Targets Amazon Linux 2 (systemd). Adjust paths to match your
+# Targets Amazon Linux 2023 (systemd). Adjust paths to match your
 # installation (see deploy/README.md and the README Operational Guide).
 #
 # Install:
