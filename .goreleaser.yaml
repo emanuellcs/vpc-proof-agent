@@ -1,0 +1,103 @@
+# =============================================================
+# vpc-proof-agent: GoReleaser configuration
+# Cross-compiles, packages, and publishes release artifacts
+# targeting Amazon Linux 2023 EC2 instances (linux/amd64 + arm64).
+# =============================================================
+
+version: 2
+
+project_name: vpc-proof-agent
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: vpc-proof
+    main: ./cmd/vpc-proof
+    binary: vpc-proof
+
+    # Static linking: zero shared-library dependencies on the target.
+    env:
+      - CGO_ENABLED=0
+
+    # Pure-Go network resolver and OS user lookups.
+    tags:
+      - netgo
+      - osusergo
+
+    # Amazon Linux 2023 targets: x86_64 and Graviton (arm64).
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    # Broadest x86-64 baseline for maximum EC2 instance compatibility.
+    goamd64:
+      - v1
+
+    # Reproducible builds.
+    flags:
+      - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+    # Inject build metadata into internal/buildinfo (mirrors the Makefile).
+    ldflags:
+      - -s -w
+      - -X github.com/emanuellcs/vpc-proof-agent/internal/buildinfo.Version={{.Version}}
+      - -X github.com/emanuellcs/vpc-proof-agent/internal/buildinfo.Commit={{.Commit}}
+      - -X github.com/emanuellcs/vpc-proof-agent/internal/buildinfo.BuildDate={{.Date}}
+      - -X "github.com/emanuellcs/vpc-proof-agent/internal/buildinfo.Developer=Emanuel Lázaro (emanuellcs)"
+
+archives:
+  - id: vpc-proof
+    ids:
+      - vpc-proof
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: true
+    files:
+      - README.md
+      - README_pt-BR.md
+      - LICENSE
+      - CHANGELOG.md
+    builds_info:
+      group: root
+      owner: root
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  use: git
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Refactors
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Documentation
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: "CI / build"
+      regexp: '^.*?(ci|build)(\([[:word:]]+\))??!?:.+$'
+      order: 4
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - "^Merge branch"
+      - "^Merge pull request"
+      - "^chore\\(deps"
+
+release:
+  github:
+    owner: emanuellcs
+    name: vpc-proof-agent

@@ -8,8 +8,9 @@ BINARY     := bin/vpc-proof
 GOBIN      := $(CURDIR)/bin
 MOCKGEN    := $(GOBIN)/mockgen
 
-GO       ?= go
-GOLANGCI ?= golangci-lint
+GO         ?= go
+GOLANGCI   ?= golangci-lint
+GORELEASER ?= goreleaser
 
 # --- Build metadata (injected into internal/buildinfo via -ldflags) -----------
 
@@ -74,9 +75,10 @@ tidy: ## Tidy Go modules
 # --- Tooling -----------------------------------------------------------------
 
 .PHONY: tools
-tools: ## Install development tools (mockgen)
+tools: ## Install development tools (mockgen, goreleaser)
 	@mkdir -p bin
 	GOBIN=$(GOBIN) $(GO) install go.uber.org/mock/mockgen@latest
+	GOBIN=$(GOBIN) $(GO) install github.com/goreleaser/goreleaser/v2@latest
 
 .PHONY: mocks
 mocks: ## Generate mocks via go:generate directives
@@ -103,6 +105,12 @@ localstack-setup: ## Provision the AWS lab inside LocalStack
 .PHONY: localstack-teardown
 localstack-teardown: ## Tear down the AWS lab from LocalStack
 	./scripts/teardown-localstack.sh
+
+# --- Release automation --------------------------------------------------------
+
+.PHONY: release-dry-run
+release-dry-run: ## Test packaging locally with GoReleaser (snapshot, no publish)
+	$(GORELEASER) release --snapshot --clean
 
 # --- Cleanup ------------------------------------------------------------------
 
