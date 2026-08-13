@@ -7,7 +7,10 @@
 
 A comprehensive **diagnostic and evidence-gathering tool** written in Go that technically validates and proves that a manually provisioned AWS networking environment is functioning correctly.
 
-The agent runs on an Amazon EC2 instance (Amazon Linux 2) and validates a target environment that consists of a VPC (`10.0.0.0/16`), a public subnet (`10.0.1.0/24` with auto-assign public IP), an Internet Gateway, a Route Table with a default route to the IGW, a Security Group, and an EC2 instance (`t2.micro`).
+The agent runs on an Amazon EC2 instance (Amazon Linux 2023) and validates a target environment that consists of a VPC (`10.0.0.0/16`), a public subnet (`10.0.1.0/24` with auto-assign public IP), an Internet Gateway, a Route Table with a default route to the IGW, a Security Group, and an EC2 instance (`t2.micro`).
+
+> [!NOTE]
+> **OS version:** The Capacita iRede activity originally requested **Amazon Linux 2**. Since Amazon has discontinued it, this project runs and is verified on **Amazon Linux 2023**, which is the platform documented throughout this repository.
 
 > **The agent does NOT provision AWS resources.** It assumes the environment exists and validates it, producing reproducible evidence.
 
@@ -341,7 +344,7 @@ Report timestamps and integrity hashes are expressed in UTC (UTC-0).
 
 ### Running as a systemd service
 
-On Amazon Linux 2:
+On Amazon Linux 2023:
 
 ```bash
 sudo cp bin/vpc-proof /usr/local/bin/vpc-proof
